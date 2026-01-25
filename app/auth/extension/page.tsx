@@ -11,29 +11,45 @@ export default function ExtensionLoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('[ExtensionLogin] Form submitted')
     setError(null)
     setLoading(true)
 
     try {
       const supabase = createClient()
+      console.log('[ExtensionLogin] Attempting sign in for:', email)
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
+      console.log('[ExtensionLogin] Sign in response:', { 
+        hasSession: !!data?.session, 
+        hasError: !!error,
+        errorMessage: error?.message 
+      })
+
       if (error) {
         setError(error.message)
+        setLoading(false)
         return
       }
 
-      if (data.session) {
-        // Redirect to success page with the access token
-        // The content script on the success page will capture this
-        window.location.href = `/auth/extension/success?token=${data.session.access_token}&email=${encodeURIComponent(email)}`
+      if (!data?.session) {
+        setError('Login failed. Please check your credentials and try again.')
+        setLoading(false)
+        return
       }
+
+      // Redirect to success page with the access token
+      // The content script on the success page will capture this
+      const successUrl = `/auth/extension/success?token=${data.session.access_token}&email=${encodeURIComponent(email)}`
+      console.log('[ExtensionLogin] Redirecting to:', successUrl.substring(0, 50) + '...')
+      window.location.href = successUrl
     } catch (err: any) {
-      setError(err.message || 'An error occurred')
-    } finally {
+      console.error('[ExtensionLogin] Error:', err)
+      setError(err.message || 'An error occurred. Please try again.')
       setLoading(false)
     }
   }
