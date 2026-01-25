@@ -4,22 +4,25 @@ frontend:
     preBuild:
       commands:
         - npm ci
-        - echo "=== Creating .env.production from Amplify environment ==="
-        - echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" > .env.production
-        - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY" >> .env.production
-        - echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> .env.production
-        - echo "USE_SUPABASE=$USE_SUPABASE" >> .env.production
-        - echo "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" >> .env.production
-        - echo "STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY" >> .env.production
-        - echo "STRIPE_WEBHOOK_SECRET=$STRIPE_WEBHOOK_SECRET" >> .env.production
-        - echo "STRIPE_PRO_PRICE_ID=$STRIPE_PRO_PRICE_ID" >> .env.production
-        - echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL" >> .env.production
-        - echo "=== Verifying .env.production ==="
-        - cat .env.production | sed 's/=.*/=[HIDDEN]/'
+        - echo "=== Clearing Next.js cache ==="
+        - rm -rf .next/cache
+        - echo "=== Environment Check ==="
+        - echo "NEXT_PUBLIC_SUPABASE_URL length:" $(echo -n "$NEXT_PUBLIC_SUPABASE_URL" | wc -c)
+        - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY length:" $(echo -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" | wc -c)
     build:
       commands:
-        - echo "=== Starting Next.js Build ==="
-        - npm run build
+        - echo "=== Building with explicit env vars ==="
+        - |
+          NEXT_PUBLIC_SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL" \
+          NEXT_PUBLIC_SUPABASE_ANON_KEY="$NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+          SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+          USE_SUPABASE="$USE_SUPABASE" \
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" \
+          STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" \
+          STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" \
+          STRIPE_PRO_PRICE_ID="$STRIPE_PRO_PRICE_ID" \
+          NEXT_PUBLIC_APP_URL="$NEXT_PUBLIC_APP_URL" \
+          npm run build
   artifacts:
     baseDirectory: .next
     files:
@@ -27,4 +30,3 @@ frontend:
   cache:
     paths:
       - node_modules/**/*
-      - .next/cache/**/*
