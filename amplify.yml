@@ -4,24 +4,20 @@ frontend:
     preBuild:
       commands:
         - npm ci
-        - echo "=== Clearing Next.js cache ==="
         - rm -rf .next/cache
-        - echo "=== Environment Check ==="
-        - echo "NEXT_PUBLIC_SUPABASE_URL length:" $(echo -n "$NEXT_PUBLIC_SUPABASE_URL" | wc -c)
-        - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY length:" $(echo -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" | wc -c)
     build:
       commands:
-        - echo "=== Building with explicit env vars ==="
+        - echo "=== Building with hardcoded public env vars ==="
         - |
-          NEXT_PUBLIC_SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL" \
-          NEXT_PUBLIC_SUPABASE_ANON_KEY="$NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+          NEXT_PUBLIC_SUPABASE_URL="https://zgysztqjsocznebtojbr.supabase.co" \
+          NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneXN6dHFqc29jem5lYnRvamJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc3NTEwODcsImV4cCI6MjA1MzMyNzA4N30.dos1xivBgTxcZxRMBwzIgFGpbzIqS-RRoodK2ek5b98" \
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_live_51StToJD5YZN6jXngDqtzuJUUUNkVvK2QYpTI2f2QD9DhHnFWQyqE0eYqWaIdXzv7uC2eIYHuLJOHs5hkB0j4uQwT00TnNLFNLT" \
+          NEXT_PUBLIC_APP_URL="https://getdealmetrics.com" \
+          USE_SUPABASE="true" \
           SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
-          USE_SUPABASE="$USE_SUPABASE" \
-          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" \
           STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" \
           STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" \
           STRIPE_PRO_PRICE_ID="$STRIPE_PRO_PRICE_ID" \
-          NEXT_PUBLIC_APP_URL="$NEXT_PUBLIC_APP_URL" \
           npm run build
   artifacts:
     baseDirectory: .next
