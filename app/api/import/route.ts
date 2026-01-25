@@ -6,25 +6,33 @@ import { Deal, ImportStatus } from '@/lib/types'
 
 // POST /api/import - Accept extension payload
 export async function POST(request: NextRequest) {
+  let debugStep = 'init'
+  
   try {
+    debugStep = 'checking_auth_header'
     // Try to get user from Bearer token (API key or JWT), then fall back to session
     const authHeader = request.headers.get('authorization')
     let userId: string
     
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.substring(7)
+      debugStep = 'validating_token'
       
       // Check if it's an API key (starts with dm_) or a JWT token
       if (token.startsWith('dm_')) {
+        debugStep = 'validating_api_key'
         userId = await getUserIdFromApiKey(token)
       } else {
         // Assume it's a JWT token from extension auth
+        debugStep = 'validating_jwt_token'
         userId = await getUserIdFromToken(token)
       }
     } else {
+      debugStep = 'getting_session_user'
       userId = await getCurrentUserId()
     }
     
+    debugStep = 'checking_import_limits'
     // Check import limits for free tier
     const { allowed, remaining } = await checkAndIncrementImportCount(userId)
     if (!allowed) {
@@ -175,31 +183,30 @@ export async function POST(request: NextRequest) {
       importsRemaining: remaining 
     }, { status: 201 })
   } catch (error: any) {
+    console.error('Error importing deal at step:', debugStep, error)
+    
     if (error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized', step: debugStep }, { status: 401 })
+    }
+    if (error.message === 'Invalid or expired token') {
+      return NextResponse.json({ error: 'Invalid or expired token', step: debugStep }, { status: 401 })
+    }
+    if (error.message === 'Profile not found') {
+      return NextResponse.json({ error: 'Profile not found - please complete account setup', step: debugStep }, { status: 404 })
     }
     if (error.name === 'ZodError') {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.errors, step: debugStep },
         { status: 400 }
       )
     }
-    console.error('Error importing deal:', error)
-    console.error('Error stack:', error.stack)
-    console.error('Error message:', error.message)
     
-    // Return more detailed error information in development
-    const errorMessage = process.env.NODE_ENV === 'development' 
-      ? error.message || 'Failed to import deal'
-      : 'Failed to import deal'
-    
+    // Always return detailed error info for debugging
     return NextResponse.json(
       { 
-        error: errorMessage,
-        ...(process.env.NODE_ENV === 'development' && { 
-          stack: error.stack,
-          details: error.toString()
-        })
+        error: error.message || 'Failed to import deal',
+        step: debugStep,
+        type: error.name || 'Error'
       },
       { status: 500 }
     )

@@ -183,7 +183,11 @@ async function importListing() {
       if (contentType && contentType.includes('application/json')) {
         try {
           const errorData = await apiResponse.json()
-          errorMessage = errorData.error || errorData.message || errorMessage
+          console.log('Error response data:', errorData)
+          
+          // Include step info if available for debugging
+          const stepInfo = errorData.step ? ` [step: ${errorData.step}]` : ''
+          errorMessage = (errorData.error || errorData.message || errorMessage) + stepInfo
 
           // Check for import limit error
           if (apiResponse.status === 403 && errorData.upgradeUrl) {
@@ -193,11 +197,16 @@ async function importListing() {
 
           // Check for unauthorized or invalid token
           if (apiResponse.status === 401) {
-            errorMessage = 'Session expired. Please sign in again.'
+            errorMessage = `Session expired: ${errorData.error || 'Please sign in again.'}${stepInfo}`
             // Clear invalid auth
             await clearAuthState()
             currentAuth = { authToken: null, userEmail: null }
             updateAuthUI(false)
+          }
+          
+          // Check for profile not found
+          if (apiResponse.status === 404 && errorData.error?.includes('Profile not found')) {
+            errorMessage = 'Account setup incomplete. Please visit the website to complete setup.'
           }
         } catch (e) {
           // If JSON parsing fails, use default message
