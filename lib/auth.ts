@@ -3,13 +3,24 @@ import { createServerClient } from '@supabase/ssr'
 import crypto from 'crypto'
 
 /**
+ * Check if we should use Supabase (always true in production)
+ */
+function shouldUseSupabase(): boolean {
+  // Always use Supabase in production (AWS Amplify)
+  if (process.env.NODE_ENV === 'production') {
+    return true
+  }
+  return process.env.USE_SUPABASE === 'true'
+}
+
+/**
  * Get the current user ID.
  * Returns the authenticated user's ID if using Supabase,
  * otherwise returns a demo user ID for local development.
  */
 export async function getCurrentUserId(): Promise<string> {
   // If not using Supabase, return demo user
-  if (process.env.USE_SUPABASE !== 'true') {
+  if (!shouldUseSupabase()) {
     return 'user_demo'
   }
 
@@ -42,7 +53,7 @@ export async function getCurrentUserId(): Promise<string> {
  * Validate API key and return user ID
  */
 export async function getUserIdFromApiKey(apiKey: string): Promise<string> {
-  if (process.env.USE_SUPABASE !== 'true') {
+  if (!shouldUseSupabase()) {
     return 'user_demo'
   }
 
@@ -75,7 +86,7 @@ export async function getUserIdFromApiKey(apiKey: string): Promise<string> {
  * Validate JWT token (from extension auth) and return user ID
  */
 export async function getUserIdFromToken(token: string): Promise<string> {
-  if (process.env.USE_SUPABASE !== 'true') {
+  if (!shouldUseSupabase()) {
     return 'user_demo'
   }
 
@@ -112,7 +123,7 @@ export function generateApiKey(): string {
  * Check if user is authenticated (for routes that need optional auth)
  */
 export async function isAuthenticated(): Promise<boolean> {
-  if (process.env.USE_SUPABASE !== 'true') {
+  if (!shouldUseSupabase()) {
     return true // Always authenticated in local mode
   }
 
@@ -138,7 +149,7 @@ export interface UserProfile {
 }
 
 export async function getUserProfile(): Promise<UserProfile | null> {
-  if (process.env.USE_SUPABASE !== 'true') {
+  if (!shouldUseSupabase()) {
     // Return mock profile for local dev
     return {
       id: 'user_demo',
@@ -198,7 +209,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
  * Returns true if import is allowed, false if limit reached
  */
 export async function checkAndIncrementImportCount(userId?: string): Promise<{ allowed: boolean; remaining: number }> {
-  if (process.env.USE_SUPABASE !== 'true') {
+  if (!shouldUseSupabase()) {
     return { allowed: true, remaining: 999 } // Unlimited in local dev
   }
 
