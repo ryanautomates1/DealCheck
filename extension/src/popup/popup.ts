@@ -10,12 +10,84 @@ interface ImportPayload {
   downPaymentPct: number
 }
 
+let currentApiKey: string | null = null
+
+// Load API key from storage
+async function loadApiKey() {
+  return new Promise<string | null>((resolve) => {
+    chrome.storage.sync.get(['apiKey'], (result) => {
+      resolve(result.apiKey || null)
+    })
+  })
+}
+
+// Save API key to storage
+async function saveApiKey(apiKey: string) {
+  return new Promise<void>((resolve) => {
+    chrome.storage.sync.set({ apiKey }, () => {
+      resolve()
+    })
+  })
+}
+
+// Update API key UI status
+function updateApiKeyStatus(isConnected: boolean) {
+  const statusEl = document.getElementById('api-key-status')!
+  const sectionEl = document.getElementById('api-key-section')!
+  const inputEl = document.getElementById('api-key-input') as HTMLInputElement
+  
+  if (isConnected) {
+    statusEl.textContent = 'Connected'
+    statusEl.className = 'api-key-status connected'
+    sectionEl.className = 'api-key-section connected'
+    inputEl.value = '••••••••••••••••'
+    inputEl.type = 'password'
+  } else {
+    statusEl.textContent = 'Not connected'
+    statusEl.className = 'api-key-status disconnected'
+    sectionEl.className = 'api-key-section'
+    inputEl.value = ''
+  }
+}
+
+async function handleSaveApiKey() {
+  const inputEl = document.getElementById('api-key-input') as HTMLInputElement
+  const apiKey = inputEl.value.trim()
+  
+  if (!apiKey || apiKey === '••••••••••••••••') {
+    return
+  }
+  
+  // Validate API key format
+  if (!apiKey.startsWith('dm_')) {
+    const errorEl = document.getElementById('error')!
+    errorEl.textContent = 'Invalid API key format. Keys start with "dm_"'
+    return
+  }
+  
+  await saveApiKey(apiKey)
+  currentApiKey = apiKey
+  updateApiKeyStatus(true)
+  
+  const statusEl = document.getElementById('status')!
+  statusEl.textContent = 'API key saved!'
+  setTimeout(() => {
+    statusEl.textContent = ''
+  }, 2000)
+}
+
 async function importListing() {
   const statusEl = document.getElementById('status')!
   const errorEl = document.getElementById('error')!
   const buttonEl = document.getElementById('import-btn') as HTMLButtonElement
   const purchaseTypeEl = document.getElementById('purchase-type') as HTMLSelectElement
   const downPaymentEl = document.getElementById('down-payment') as HTMLInputElement
+  
+  // Check for API key
+  if (!currentApiKey) {
+    errorEl.textContent = 'Please enter your API key first. Get it from your DealMetrics dashboard.'
+    return
+  }
   
   // Validate inputs
   const purchaseType = purchaseTypeEl.value
@@ -78,11 +150,12 @@ async function importListing() {
     console.log('Sending payload to:', `${API_BASE_URL}/api/import`)
     console.log('Payload:', payload)
     
-    // POST to web app
+    // POST to web app with API key authentication
     const apiResponse = await fetch(`${API_BASE_URL}/api/import`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${currentApiKey}`,
       },
       body: JSON.stringify(payload),
     })
@@ -106,9 +179,13 @@ async function importListing() {
             errorMessage = errorData.message || 'Monthly import limit reached. Upgrade to Pro for unlimited imports.'
           }
           
-          // Check for unauthorized
+          // Check for unauthorized or invalid API key
           if (apiResponse.status === 401) {
-            errorMessage = 'Please sign in to DealMetrics first.'
+            errorMessage = 'Invalid API key. Please check your API key and try again.'
+            // Clear invalid API key
+            await chrome.storage.sync.remove(['apiKey'])
+            currentApiKey = null
+            updateApiKeyStatus(false)
           }
         } catch (e) {
           // If JSON parsing fails, use default message
@@ -153,7 +230,32 @@ async function importListing() {
 }
 
 // Initialize popup
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Load saved API key
+  currentApiKey = await loadApiKey()
+  updateApiKeyStatus(!!currentApiKey)
+  
+  // Set up event listeners
   const importBtn = document.getElementById('import-btn')
   importBtn?.addEventListener('click', importListing)
+  
+  const saveApiKeyBtn = document.getElementById('save-api-key-btn')
+  saveApiKeyBtn?.addEventListener('click', handleSaveApiKey)
+  
+  // Allow Enter key to save API key
+  const apiKeyInput = document.getElementById('api-key-input')
+  apiKeyInput?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      handleSaveApiKey()
+    }
+  })
+  
+  // Clear input when focused if showing masked value
+  apiKeyInput?.addEventListener('focus', () => {
+    const input = apiKeyInput as HTMLInputElement
+    if (input.value === '••••••••••••••••') {
+      input.value = ''
+      input.type = 'text'
+    }
+  })
 })

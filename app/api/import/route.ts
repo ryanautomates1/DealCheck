@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUserId, checkAndIncrementImportCount } from '@/lib/auth'
+import { getCurrentUserId, checkAndIncrementImportCount, getUserIdFromApiKey } from '@/lib/auth'
 import { dealRepository, importLogRepository } from '@/lib/repositories'
 import { extensionImportSchema } from '@/lib/schemas'
 import { Deal, ImportStatus } from '@/lib/types'
@@ -7,10 +7,19 @@ import { Deal, ImportStatus } from '@/lib/types'
 // POST /api/import - Accept extension payload
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getCurrentUserId()
+    // Try to get user from API key first (for extension), then fall back to session
+    const authHeader = request.headers.get('authorization')
+    let userId: string
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      const apiKey = authHeader.substring(7)
+      userId = await getUserIdFromApiKey(apiKey)
+    } else {
+      userId = await getCurrentUserId()
+    }
     
     // Check import limits for free tier
-    const { allowed, remaining } = await checkAndIncrementImportCount()
+    const { allowed, remaining } = await checkAndIncrementImportCount(userId)
     if (!allowed) {
       return NextResponse.json(
         { 

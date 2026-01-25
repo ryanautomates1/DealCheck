@@ -7,17 +7,8 @@ export default function Home() {
   const router = useRouter()
   
   useEffect(() => {
-    // Check if Supabase is configured
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const useSupabase = process.env.USE_SUPABASE === 'true'
-    
-    if (supabaseUrl && useSupabase) {
-      // Using Supabase - redirect to login (middleware will handle auth check)
-      router.push('/auth/login')
-    } else {
-      // Local dev mode - go straight to dashboard
-      router.push('/dashboard')
-    }
+    // Always redirect to dashboard - middleware will handle auth if Supabase is enabled
+    router.push('/dashboard')
   }, [router])
   
   return (

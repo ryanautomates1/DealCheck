@@ -6,7 +6,7 @@
   <title>DealMetrics</title>
   <style>
     body {
-      width: 320px;
+      width: 340px;
       padding: 16px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
@@ -59,18 +59,86 @@
     .hidden {
       display: none;
     }
-    select, input[type="number"] {
+    select, input[type="number"], input[type="password"], input[type="text"] {
       font-family: inherit;
       color: #1a1a1a;
     }
-    select:focus, input[type="number"]:focus {
+    select:focus, input:focus {
       outline: 2px solid #2563eb;
       outline-offset: 2px;
+    }
+    .api-key-section {
+      margin-bottom: 16px;
+      padding: 12px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+    }
+    .api-key-section.connected {
+      background: #ecfdf5;
+      border-color: #10b981;
+    }
+    .api-key-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .api-key-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+    }
+    .api-key-status {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .api-key-status.connected {
+      background: #10b981;
+      color: white;
+    }
+    .api-key-status.disconnected {
+      background: #f59e0b;
+      color: white;
+    }
+    .api-key-input-row {
+      display: flex;
+      gap: 8px;
+    }
+    .api-key-input-row input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: monospace;
+    }
+    .api-key-input-row button {
+      width: auto;
+      padding: 8px 12px;
+      font-size: 13px;
     }
   </style>
 </head>
 <body>
   <h1>DealMetrics</h1>
+  
+  <!-- API Key Section -->
+  <div id="api-key-section" class="api-key-section">
+    <div class="api-key-header">
+      <span class="api-key-label">API Key</span>
+      <span id="api-key-status" class="api-key-status disconnected">Not connected</span>
+    </div>
+    <div class="api-key-input-row">
+      <input type="password" id="api-key-input" placeholder="Paste your API key from DealMetrics">
+      <button id="save-api-key-btn" style="background: #059669;">Save</button>
+    </div>
+    <div style="margin-top: 8px; font-size: 11px; color: #6b7280;">
+      Get your API key from the <a href="https://getdealmetrics.com/dashboard" target="_blank" style="color: #2563eb;">DealMetrics dashboard</a>
+    </div>
+  </div>
+
   <div id="form-section">
     <div style="margin-bottom: 12px;">
       <label for="purchase-type" style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: #374151;">Purchase Type *</label>
@@ -92,12 +160,12 @@
   <div id="status"></div>
   <div id="error"></div>
   <div id="upgrade-prompt" class="hidden" style="margin-top: 12px; padding: 12px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; text-align: center;">
-    <a href="http://localhost:3000/pricing" target="_blank" style="color: #d97706; font-weight: 500; text-decoration: underline;">
+    <a href="https://getdealmetrics.com/pricing" target="_blank" style="color: #d97706; font-weight: 500; text-decoration: underline;">
       Upgrade to Pro for unlimited imports
     </a>
   </div>
   <div class="info">
-    Make sure you&apos;re viewing a property listing page, then click the button above.
+    Make sure you're viewing a property listing page, then click the button above.
   </div>
   <script type="module" src="./popup.ts"></script>
 </body>

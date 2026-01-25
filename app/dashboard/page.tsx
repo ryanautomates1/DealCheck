@@ -67,6 +67,10 @@ function DashboardContent() {
   const [filterPurchaseType, setFilterPurchaseType] = useState<PurchaseType | 'all'>('all')
   const [filterImportStatus, setFilterImportStatus] = useState<ImportStatus | 'all'>('all')
   const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false)
+  const [apiKey, setApiKey] = useState<string | null>(null)
+  const [showApiKey, setShowApiKey] = useState(false)
+  const [apiKeyLoading, setApiKeyLoading] = useState(false)
+  const [apiKeyCopied, setApiKeyCopied] = useState(false)
 
   useEffect(() => {
     if (searchParams.get('upgraded') === 'true') {
@@ -78,7 +82,44 @@ function DashboardContent() {
 
   useEffect(() => {
     fetchDeals()
+    fetchApiKey()
   }, [])
+
+  const fetchApiKey = async () => {
+    try {
+      const res = await fetch('/api/user/api-key')
+      if (res.ok) {
+        const data = await res.json()
+        setApiKey(data.apiKey)
+      }
+    } catch (error) {
+      console.error('Error fetching API key:', error)
+    }
+  }
+
+  const generateNewApiKey = async () => {
+    setApiKeyLoading(true)
+    try {
+      const res = await fetch('/api/user/api-key', { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        setApiKey(data.apiKey)
+        setShowApiKey(true)
+      }
+    } catch (error) {
+      console.error('Error generating API key:', error)
+    } finally {
+      setApiKeyLoading(false)
+    }
+  }
+
+  const copyApiKey = async () => {
+    if (apiKey) {
+      await navigator.clipboard.writeText(apiKey)
+      setApiKeyCopied(true)
+      setTimeout(() => setApiKeyCopied(false), 2000)
+    }
+  }
 
   const fetchDeals = async () => {
     setLoading(true)
@@ -374,6 +415,76 @@ function DashboardContent() {
               </svg>
               Download Free Extension
             </a>
+          </div>
+        </div>
+
+        {/* API Key Section for Extension */}
+        <div className="mb-6 p-5 bg-white rounded-xl border border-gray-200">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Extension API Key</h3>
+              <p className="text-gray-600 text-sm mt-1">
+                Enter this key in the DealMetrics Chrome extension to connect your account.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {apiKey ? (
+                <>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg font-mono text-sm">
+                    <span className="text-gray-800">
+                      {showApiKey ? apiKey : '••••••••••••••••••••'}
+                    </span>
+                    <button
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      className="text-gray-500 hover:text-gray-700"
+                      title={showApiKey ? 'Hide' : 'Show'}
+                    >
+                      {showApiKey ? (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  <button
+                    onClick={copyApiKey}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    title="Copy to clipboard"
+                  >
+                    {apiKeyCopied ? (
+                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
+                  <button
+                    onClick={generateNewApiKey}
+                    disabled={apiKeyLoading}
+                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Generate new key"
+                  >
+                    {apiKeyLoading ? 'Generating...' : 'Regenerate'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={generateNewApiKey}
+                  disabled={apiKeyLoading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {apiKeyLoading ? 'Generating...' : 'Generate API Key'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

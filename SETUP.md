@@ -62,9 +62,13 @@ CREATE TABLE public.profiles (
   stripe_subscription_id TEXT,
   imports_this_month INTEGER DEFAULT 0,
   imports_reset_at TIMESTAMPTZ DEFAULT NOW(),
+  api_key TEXT UNIQUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Index for API key lookups
+CREATE INDEX idx_profiles_api_key ON public.profiles(api_key);
 
 -- Deals table
 CREATE TABLE public.deals (

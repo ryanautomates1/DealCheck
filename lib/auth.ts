@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
+import crypto from 'crypto'
 
 /**
  * Get the current user ID.
@@ -35,6 +36,46 @@ export async function getCurrentUserId(): Promise<string> {
   }
 
   return user.id
+}
+
+/**
+ * Validate API key and return user ID
+ */
+export async function getUserIdFromApiKey(apiKey: string): Promise<string> {
+  if (process.env.USE_SUPABASE !== 'true') {
+    return 'user_demo'
+  }
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        get() { return undefined },
+        set() {},
+        remove() {},
+      },
+    }
+  )
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('api_key', apiKey)
+    .single()
+
+  if (!profile) {
+    throw new Error('Invalid API key')
+  }
+
+  return profile.id
+}
+
+/**
+ * Generate a new API key
+ */
+export function generateApiKey(): string {
+  return `dm_${crypto.randomBytes(24).toString('hex')}`
 }
 
 /**
@@ -126,37 +167,52 @@ export async function getUserProfile(): Promise<UserProfile | null> {
  * Check and update import count for free tier limits
  * Returns true if import is allowed, false if limit reached
  */
-export async function checkAndIncrementImportCount(): Promise<{ allowed: boolean; remaining: number }> {
+export async function checkAndIncrementImportCount(userId?: string): Promise<{ allowed: boolean; remaining: number }> {
   if (process.env.USE_SUPABASE !== 'true') {
     return { allowed: true, remaining: 999 } // Unlimited in local dev
   }
 
-  const cookieStore = cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!, // Use service role to bypass RLS for update
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
+        get() { return undefined },
         set() {},
         remove() {},
       },
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    throw new Error('Unauthorized')
+  // Get user ID if not provided
+  let targetUserId = userId
+  if (!targetUserId) {
+    const cookieStore = cookies()
+    const sessionSupabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set() {},
+          remove() {},
+        },
+      }
+    )
+    const { data: { user } } = await sessionSupabase.auth.getUser()
+    if (!user) {
+      throw new Error('Unauthorized')
+    }
+    targetUserId = user.id
   }
 
   // Get current profile
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', user.id)
+    .eq('id', targetUserId)
     .single()
 
   if (!profile) {
@@ -182,7 +238,7 @@ export async function checkAndIncrementImportCount(): Promise<{ allowed: boolean
         imports_reset_at: now.toISOString(),
         updated_at: now.toISOString(),
       })
-      .eq('id', user.id)
+      .eq('id', targetUserId)
 
     return { allowed: true, remaining: 1 } // 1 remaining after this import
   }
@@ -201,7 +257,7 @@ export async function checkAndIncrementImportCount(): Promise<{ allowed: boolean
       imports_this_month: newCount,
       updated_at: now.toISOString(),
     })
-    .eq('id', user.id)
+    .eq('id', targetUserId)
 
   return { allowed: true, remaining: FREE_TIER_LIMIT - newCount }
 }
