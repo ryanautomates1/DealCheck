@@ -9,6 +9,7 @@ frontend:
         - echo "Checking environment variables..."
         - echo "NEXT_PUBLIC_SUPABASE_URL is ${NEXT_PUBLIC_SUPABASE_URL:+SET}"
         - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY is ${NEXT_PUBLIC_SUPABASE_ANON_KEY:+SET}"
+        - env | grep -i supabase || echo "No SUPABASE env vars found in environment"
         - npm run build
   artifacts:
     baseDirectory: .next
@@ -18,3 +19,13 @@ frontend:
     paths:
       - node_modules/**/*
       - .next/cache/**/*
+  environment:
+    variables:
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      USE_SUPABASE: ${USE_SUPABASE}
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_PRO_PRICE_ID: ${STRIPE_PRICE_ID}
