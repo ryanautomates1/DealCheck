@@ -15,25 +15,86 @@ import { SupabaseAnalysisRepository } from './supabase-analysis-repository'
 import { SupabaseShareRepository } from './supabase-share-repository'
 import { SupabaseImportLogRepository } from './supabase-import-log-repository'
 
-// Determine if we should use Supabase based on environment
-const useSupabase = process.env.USE_SUPABASE === 'true'
+// Lazy-initialized repository instances
+let _dealRepository: IDealRepository | null = null
+let _analysisRepository: IAnalysisRepository | null = null
+let _shareRepository: IShareRepository | null = null
+let _importLogRepository: IImportLogRepository | null = null
 
-// Export repository instances based on environment
-export const dealRepository: IDealRepository = useSupabase
-  ? new SupabaseDealRepository()
-  : new JsonDealRepository()
+// Check at runtime if we should use Supabase
+function shouldUseSupabase(): boolean {
+  // Always use Supabase in production (AWS Amplify has read-only filesystem)
+  if (process.env.NODE_ENV === 'production') {
+    return true
+  }
+  return process.env.USE_SUPABASE === 'true'
+}
 
-export const analysisRepository: IAnalysisRepository = useSupabase
-  ? new SupabaseAnalysisRepository()
-  : new JsonAnalysisRepository()
+// Getters that create repository instances on first access (runtime)
+export const dealRepository: IDealRepository = {
+  findAll: (...args) => getOrCreateDealRepo().findAll(...args),
+  findById: (...args) => getOrCreateDealRepo().findById(...args),
+  findByZillowUrl: (...args) => getOrCreateDealRepo().findByZillowUrl(...args),
+  create: (...args) => getOrCreateDealRepo().create(...args),
+  update: (...args) => getOrCreateDealRepo().update(...args),
+  delete: (...args) => getOrCreateDealRepo().delete(...args),
+  search: (...args) => getOrCreateDealRepo().search(...args),
+}
 
-export const shareRepository: IShareRepository = useSupabase
-  ? new SupabaseShareRepository()
-  : new JsonShareRepository()
+export const analysisRepository: IAnalysisRepository = {
+  findByDealId: (...args) => getOrCreateAnalysisRepo().findByDealId(...args),
+  findLatestByDealId: (...args) => getOrCreateAnalysisRepo().findLatestByDealId(...args),
+  create: (...args) => getOrCreateAnalysisRepo().create(...args),
+  delete: (...args) => getOrCreateAnalysisRepo().delete(...args),
+}
 
-export const importLogRepository: IImportLogRepository = useSupabase
-  ? new SupabaseImportLogRepository()
-  : new JsonImportLogRepository()
+export const shareRepository: IShareRepository = {
+  findByToken: (...args) => getOrCreateShareRepo().findByToken(...args),
+  findByDealId: (...args) => getOrCreateShareRepo().findByDealId(...args),
+  create: (...args) => getOrCreateShareRepo().create(...args),
+  revoke: (...args) => getOrCreateShareRepo().revoke(...args),
+}
+
+export const importLogRepository: IImportLogRepository = {
+  findByDealId: (...args) => getOrCreateImportLogRepo().findByDealId(...args),
+  create: (...args) => getOrCreateImportLogRepo().create(...args),
+}
+
+function getOrCreateDealRepo(): IDealRepository {
+  if (!_dealRepository) {
+    _dealRepository = shouldUseSupabase()
+      ? new SupabaseDealRepository()
+      : new JsonDealRepository()
+  }
+  return _dealRepository
+}
+
+function getOrCreateAnalysisRepo(): IAnalysisRepository {
+  if (!_analysisRepository) {
+    _analysisRepository = shouldUseSupabase()
+      ? new SupabaseAnalysisRepository()
+      : new JsonAnalysisRepository()
+  }
+  return _analysisRepository
+}
+
+function getOrCreateShareRepo(): IShareRepository {
+  if (!_shareRepository) {
+    _shareRepository = shouldUseSupabase()
+      ? new SupabaseShareRepository()
+      : new JsonShareRepository()
+  }
+  return _shareRepository
+}
+
+function getOrCreateImportLogRepo(): IImportLogRepository {
+  if (!_importLogRepository) {
+    _importLogRepository = shouldUseSupabase()
+      ? new SupabaseImportLogRepository()
+      : new JsonImportLogRepository()
+  }
+  return _importLogRepository
+}
 
 // Re-export interfaces for type usage
 export type { IDealRepository } from './deal-repository.interface'
