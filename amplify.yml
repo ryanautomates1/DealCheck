@@ -4,23 +4,23 @@ frontend:
     preBuild:
       commands:
         - npm ci
-        - echo "=== Debugging Amplify Environment ==="
-        - echo "Checking all environment variables..."
-        - printenv | wc -l
-        - echo "Looking for any SUPABASE vars..."
-        - printenv | grep -i supabase || echo "No supabase vars found in printenv"
-        - echo "Looking for any AWS_* vars..."
-        - printenv | grep -E "^AWS_" | head -5 || echo "No AWS vars"
-        - echo "Checking if .env files exist..."
-        - ls -la .env* 2>/dev/null || echo "No .env files found"
-        - echo "Checking Amplify-specific locations..."
-        - cat /codebuild/output/tmp/env.sh 2>/dev/null || echo "No Amplify env.sh found"
-        - ls -la /codebuild/ 2>/dev/null || echo "No /codebuild directory"
+        - echo "=== Creating .env.production from Amplify environment ==="
+        - |
+          cat > .env.production << EOF
+          NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+          SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
+          USE_SUPABASE=$USE_SUPABASE
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$STRIPE_PUBLISHABLE_KEY
+          STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY
+          STRIPE_WEBHOOK_SECRET=$STRIPE_WEBHOOK_SECRET
+          STRIPE_PRO_PRICE_ID=$STRIPE_PRICE_ID
+          NEXT_PUBLIC_APP_URL=https://getdealmetrics.com
+          EOF
+        - echo "=== Verifying .env.production ==="
+        - cat .env.production | sed 's/=.*/=[HIDDEN]/'
     build:
       commands:
-        - echo "=== Final Environment Check Before Build ==="
-        - echo "NEXT_PUBLIC_SUPABASE_URL length = $(echo -n \"$NEXT_PUBLIC_SUPABASE_URL\" | wc -c)"
-        - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY length = $(echo -n \"$NEXT_PUBLIC_SUPABASE_ANON_KEY\" | wc -c)"
         - echo "=== Starting Next.js Build ==="
         - npm run build
   artifacts:
