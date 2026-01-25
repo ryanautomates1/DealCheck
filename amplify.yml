@@ -5,18 +5,15 @@ frontend:
       commands:
         - npm ci
         - echo "=== Creating .env.production from Amplify environment ==="
-        - |
-          cat > .env.production << EOF
-          NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-          NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-          SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
-          USE_SUPABASE=$USE_SUPABASE
-          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$STRIPE_PUBLISHABLE_KEY
-          STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY
-          STRIPE_WEBHOOK_SECRET=$STRIPE_WEBHOOK_SECRET
-          STRIPE_PRO_PRICE_ID=$STRIPE_PRICE_ID
-          NEXT_PUBLIC_APP_URL=https://getdealmetrics.com
-          EOF
+        - echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" > .env.production
+        - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY" >> .env.production
+        - echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> .env.production
+        - echo "USE_SUPABASE=$USE_SUPABASE" >> .env.production
+        - echo "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" >> .env.production
+        - echo "STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY" >> .env.production
+        - echo "STRIPE_WEBHOOK_SECRET=$STRIPE_WEBHOOK_SECRET" >> .env.production
+        - echo "STRIPE_PRO_PRICE_ID=$STRIPE_PRO_PRICE_ID" >> .env.production
+        - echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL" >> .env.production
         - echo "=== Verifying .env.production ==="
         - cat .env.production | sed 's/=.*/=[HIDDEN]/'
     build:
