@@ -43,9 +43,8 @@ export const dealRepository: IDealRepository = {
 
 export const analysisRepository: IAnalysisRepository = {
   findByDealId: (...args) => getOrCreateAnalysisRepo().findByDealId(...args),
-  findLatestByDealId: (...args) => getOrCreateAnalysisRepo().findLatestByDealId(...args),
+  findById: (...args) => getOrCreateAnalysisRepo().findById(...args),
   create: (...args) => getOrCreateAnalysisRepo().create(...args),
-  delete: (...args) => getOrCreateAnalysisRepo().delete(...args),
 }
 
 export const shareRepository: IShareRepository = {
