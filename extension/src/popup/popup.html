@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DealCheck</title>
+  <style>
+    body {
+      width: 320px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+      color: #1a1a1a;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+    button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #4b5563;
+      min-height: 20px;
+    }
+    #error {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #dc2626;
+      min-height: 20px;
+    }
+    .info {
+      margin-top: 16px;
+      padding: 12px;
+      background: #f3f4f6;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .hidden {
+      display: none;
+    }
+    select, input[type="number"] {
+      font-family: inherit;
+      color: #1a1a1a;
+    }
+    select:focus, input[type="number"]:focus {
+      outline: 2px solid #2563eb;
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <h1>DealCheck</h1>
+  <div id="form-section">
+    <div style="margin-bottom: 12px;">
+      <label for="purchase-type" style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: #374151;">Purchase Type *</label>
+      <select id="purchase-type" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px; background: white;">
+        <option value="">Select...</option>
+        <option value="primary_residence">Primary Residence</option>
+        <option value="investment_property">Investment Property</option>
+        <option value="house_hack">House Hack (Multi-Family)</option>
+        <option value="vacation_home">Vacation Home</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label for="down-payment" style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: #374151;">Down Payment (%) *</label>
+      <input type="number" id="down-payment" min="0" max="100" step="0.1" value="20" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+    </div>
+    <button id="import-btn">Import current listing</button>
+  </div>
+  <div id="status"></div>
+  <div id="error"></div>
+  <div id="upgrade-prompt" class="hidden" style="margin-top: 12px; padding: 12px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; text-align: center;">
+    <a href="http://localhost:3000/pricing" target="_blank" style="color: #d97706; font-weight: 500; text-decoration: underline;">
+      Upgrade to Pro for unlimited imports
+    </a>
+  </div>
+  <div class="info">
+    Make sure you&apos;re viewing a property listing page, then click the button above.
+  </div>
+  <script type="module" src="./popup.ts"></script>
+</body>
+</html>
