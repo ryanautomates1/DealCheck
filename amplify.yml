@@ -10,8 +10,8 @@ frontend:
         - echo "=== Building with hardcoded public env vars ==="
         - |
           NEXT_PUBLIC_SUPABASE_URL="https://zgysztqjsocznebtojbr.supabase.co" \
-          NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneXN6dHFqc29jem5lYnRvamJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc3NTEwODcsImV4cCI6MjA1MzMyNzA4N30.dos1xivBgTxcZxRMBwzIgFGpbzIqS-RRoodK2ek5b98" \
-          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_live_51StToJD5YZN6jXngDqtzuJUUUNkVvK2QYpTI2f2QD9DhHnFWQyqE0eYqWaIdXzv7uC2eIYHuLJOHs5hkB0j4uQwT00TnNLFNLT" \
+          NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneXN6dHFqc29jem5lYnRvamJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzMzAzNjUsImV4cCI6MjA4NDkwNjM2NX0.O5VqCpiygA2UAX6Oyv5TzWzYP9JLJvts6MSfBmLXKZY" \
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_live_51StToJD5YZN6jXngDqtzuJUUUNkVvK2QY2H5g2bVOKVN1HHI672D8ZYkV5mDwKHF8exSIQjO7et9W6pvqZzUD73m00YmsHuDWl" \
           NEXT_PUBLIC_APP_URL="https://getdealmetrics.com" \
           USE_SUPABASE="true" \
           SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
