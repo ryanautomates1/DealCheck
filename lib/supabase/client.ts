@@ -1,13 +1,26 @@
 import { createBrowserClient } from '@supabase/ssr'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-// Mock client for when Supabase is not configured
+// Error object for when Supabase is not configured
+const notConfiguredError = { 
+  message: 'Supabase is not configured. Please check your environment variables (NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY).',
+  status: 500 
+}
+
+// Mock client that returns errors when Supabase is not configured
+// This makes it obvious when env vars are missing rather than silently failing
 const mockClient = {
   auth: {
     getSession: async () => ({ data: { session: null as any }, error: null }),
     getUser: async () => ({ data: { user: null as any }, error: null }),
-    signInWithPassword: async () => ({ data: { user: null as any, session: null as any }, error: null }),
-    signUp: async () => ({ data: { user: null as any, session: null as any }, error: null }),
+    signInWithPassword: async () => ({ 
+      data: { user: null as any, session: null as any }, 
+      error: notConfiguredError 
+    }),
+    signUp: async () => ({ 
+      data: { user: null as any, session: null as any }, 
+      error: notConfiguredError 
+    }),
     signOut: async () => ({ error: null }),
     onAuthStateChange: (_callback: any) => ({ data: { subscription: { unsubscribe: () => {} } } }),
     exchangeCodeForSession: async () => ({ data: { session: null as any }, error: null }),
@@ -43,7 +56,9 @@ export function createClient(): SupabaseClient {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   
   if (!url || !key) {
-    // Return a mock client for build time or local dev without Supabase
+    console.warn('[Supabase] Environment variables not configured. Using mock client.')
+    console.warn('[Supabase] NEXT_PUBLIC_SUPABASE_URL:', url ? 'SET' : 'MISSING')
+    console.warn('[Supabase] NEXT_PUBLIC_SUPABASE_ANON_KEY:', key ? 'SET' : 'MISSING')
     return mockClient
   }
   
