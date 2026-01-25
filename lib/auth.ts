@@ -72,6 +72,36 @@ export async function getUserIdFromApiKey(apiKey: string): Promise<string> {
 }
 
 /**
+ * Validate JWT token (from extension auth) and return user ID
+ */
+export async function getUserIdFromToken(token: string): Promise<string> {
+  if (process.env.USE_SUPABASE !== 'true') {
+    return 'user_demo'
+  }
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        get() { return undefined },
+        set() {},
+        remove() {},
+      },
+    }
+  )
+
+  // Verify the JWT token with Supabase
+  const { data: { user }, error } = await supabase.auth.getUser(token)
+
+  if (error || !user) {
+    throw new Error('Invalid or expired token')
+  }
+
+  return user.id
+}
+
+/**
  * Generate a new API key
  */
 export function generateApiKey(): string {

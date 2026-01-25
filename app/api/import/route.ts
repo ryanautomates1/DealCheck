@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUserId, checkAndIncrementImportCount, getUserIdFromApiKey } from '@/lib/auth'
+import { getCurrentUserId, checkAndIncrementImportCount, getUserIdFromApiKey, getUserIdFromToken } from '@/lib/auth'
 import { dealRepository, importLogRepository } from '@/lib/repositories'
 import { extensionImportSchema } from '@/lib/schemas'
 import { Deal, ImportStatus } from '@/lib/types'
@@ -7,13 +7,20 @@ import { Deal, ImportStatus } from '@/lib/types'
 // POST /api/import - Accept extension payload
 export async function POST(request: NextRequest) {
   try {
-    // Try to get user from API key first (for extension), then fall back to session
+    // Try to get user from Bearer token (API key or JWT), then fall back to session
     const authHeader = request.headers.get('authorization')
     let userId: string
     
     if (authHeader?.startsWith('Bearer ')) {
-      const apiKey = authHeader.substring(7)
-      userId = await getUserIdFromApiKey(apiKey)
+      const token = authHeader.substring(7)
+      
+      // Check if it's an API key (starts with dm_) or a JWT token
+      if (token.startsWith('dm_')) {
+        userId = await getUserIdFromApiKey(token)
+      } else {
+        // Assume it's a JWT token from extension auth
+        userId = await getUserIdFromToken(token)
+      }
     } else {
       userId = await getCurrentUserId()
     }

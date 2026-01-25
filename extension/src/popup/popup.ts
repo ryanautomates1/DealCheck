@@ -10,67 +10,79 @@ interface ImportPayload {
   downPaymentPct: number
 }
 
-let currentApiKey: string | null = null
+interface AuthState {
+  authToken: string | null
+  userEmail: string | null
+}
 
-// Load API key from storage
-async function loadApiKey() {
-  return new Promise<string | null>((resolve) => {
-    chrome.storage.sync.get(['apiKey'], (result) => {
-      resolve(result.apiKey || null)
+let currentAuth: AuthState = {
+  authToken: null,
+  userEmail: null
+}
+
+// Load auth state from storage
+async function loadAuthState(): Promise<AuthState> {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(['authToken', 'userEmail'], (result) => {
+      resolve({
+        authToken: result.authToken || null,
+        userEmail: result.userEmail || null
+      })
     })
   })
 }
 
-// Save API key to storage
-async function saveApiKey(apiKey: string) {
-  return new Promise<void>((resolve) => {
-    chrome.storage.sync.set({ apiKey }, () => {
+// Clear auth state
+async function clearAuthState(): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.sync.remove(['authToken', 'userEmail'], () => {
       resolve()
     })
   })
 }
 
-// Update API key UI status
-function updateApiKeyStatus(isConnected: boolean) {
-  const statusEl = document.getElementById('api-key-status')!
-  const sectionEl = document.getElementById('api-key-section')!
-  const inputEl = document.getElementById('api-key-input') as HTMLInputElement
-  
-  if (isConnected) {
-    statusEl.textContent = 'Connected'
-    statusEl.className = 'api-key-status connected'
-    sectionEl.className = 'api-key-section connected'
-    inputEl.value = '••••••••••••••••'
-    inputEl.type = 'password'
+// Update UI based on auth state
+function updateAuthUI(isAuthenticated: boolean, email?: string | null) {
+  const authSection = document.getElementById('auth-section')!
+  const authStatus = document.getElementById('auth-status')!
+  const signedOutState = document.getElementById('signed-out-state')!
+  const signedInState = document.getElementById('signed-in-state')!
+  const userEmailEl = document.getElementById('user-email')!
+  const importBtn = document.getElementById('import-btn') as HTMLButtonElement
+
+  if (isAuthenticated && email) {
+    authSection.className = 'auth-section connected'
+    authStatus.textContent = 'Connected'
+    authStatus.className = 'auth-status connected'
+    signedOutState.classList.add('hidden')
+    signedInState.classList.remove('hidden')
+    userEmailEl.textContent = email
+    importBtn.disabled = false
   } else {
-    statusEl.textContent = 'Not connected'
-    statusEl.className = 'api-key-status disconnected'
-    sectionEl.className = 'api-key-section'
-    inputEl.value = ''
+    authSection.className = 'auth-section'
+    authStatus.textContent = 'Not connected'
+    authStatus.className = 'auth-status disconnected'
+    signedOutState.classList.remove('hidden')
+    signedInState.classList.add('hidden')
+    userEmailEl.textContent = ''
+    importBtn.disabled = false // Still allow clicking to show error message
   }
 }
 
-async function handleSaveApiKey() {
-  const inputEl = document.getElementById('api-key-input') as HTMLInputElement
-  const apiKey = inputEl.value.trim()
-  
-  if (!apiKey || apiKey === '••••••••••••••••') {
-    return
-  }
-  
-  // Validate API key format
-  if (!apiKey.startsWith('dm_')) {
-    const errorEl = document.getElementById('error')!
-    errorEl.textContent = 'Invalid API key format. Keys start with "dm_"'
-    return
-  }
-  
-  await saveApiKey(apiKey)
-  currentApiKey = apiKey
-  updateApiKeyStatus(true)
+// Handle sign in - open auth page
+function handleSignIn() {
+  const authUrl = `${API_BASE_URL}/auth/extension`
+  chrome.tabs.create({ url: authUrl })
+}
+
+// Handle sign out
+async function handleSignOut() {
+  await clearAuthState()
+  currentAuth = { authToken: null, userEmail: null }
+  updateAuthUI(false)
   
   const statusEl = document.getElementById('status')!
-  statusEl.textContent = 'API key saved!'
+  statusEl.textContent = 'Signed out successfully'
   setTimeout(() => {
     statusEl.textContent = ''
   }, 2000)
@@ -82,39 +94,39 @@ async function importListing() {
   const buttonEl = document.getElementById('import-btn') as HTMLButtonElement
   const purchaseTypeEl = document.getElementById('purchase-type') as HTMLSelectElement
   const downPaymentEl = document.getElementById('down-payment') as HTMLInputElement
-  
-  // Check for API key
-  if (!currentApiKey) {
-    errorEl.textContent = 'Please enter your API key first. Get it from your DealMetrics dashboard.'
+
+  // Check for auth token
+  if (!currentAuth.authToken) {
+    errorEl.textContent = 'Please sign in first to import listings.'
     return
   }
-  
+
   // Validate inputs
   const purchaseType = purchaseTypeEl.value
   const downPaymentPct = parseFloat(downPaymentEl.value)
-  
+
   if (!purchaseType) {
     errorEl.textContent = 'Please select a Purchase Type'
     return
   }
-  
+
   if (isNaN(downPaymentPct) || downPaymentPct < 0 || downPaymentPct > 100) {
     errorEl.textContent = 'Please enter a valid Down Payment % (0-100)'
     return
   }
-  
+
   statusEl.textContent = 'Extracting data...'
   errorEl.textContent = ''
   buttonEl.disabled = true
-  
+
   try {
     // Get current tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    
+
     if (!tab.id) {
       throw new Error('Could not access current tab')
     }
-    
+
     // Check if we're on Zillow
     if (!tab.url?.includes('zillow.com')) {
       errorEl.textContent = 'Please navigate to a property listing page first.'
@@ -122,7 +134,7 @@ async function importListing() {
       buttonEl.disabled = false
       return
     }
-    
+
     // Use message passing to content script (already injected via manifest)
     let response
     try {
@@ -134,58 +146,58 @@ async function importListing() {
       }
       throw error
     }
-    
+
     if (!response || !response.success) {
       throw new Error(response?.error || 'Failed to extract data')
     }
-    
+
     const payload: ImportPayload = {
       ...response.payload,
       purchaseType,
       downPaymentPct,
     }
-    
+
     statusEl.textContent = 'Importing to DealMetrics...'
-    
+
     console.log('Sending payload to:', `${API_BASE_URL}/api/import`)
     console.log('Payload:', payload)
-    
-    // POST to web app with API key authentication
+
+    // POST to web app with auth token
     const apiResponse = await fetch(`${API_BASE_URL}/api/import`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${currentApiKey}`,
+        'Authorization': `Bearer ${currentAuth.authToken}`,
       },
       body: JSON.stringify(payload),
     })
-    
+
     console.log('API Response status:', apiResponse.status, apiResponse.statusText)
-    
+
     if (!apiResponse.ok) {
       // Check if response is JSON
       const contentType = apiResponse.headers.get('content-type')
       let errorMessage = 'Failed to import listing'
       let isLimitError = false
-      
+
       if (contentType && contentType.includes('application/json')) {
         try {
           const errorData = await apiResponse.json()
           errorMessage = errorData.error || errorData.message || errorMessage
-          
+
           // Check for import limit error
           if (apiResponse.status === 403 && errorData.upgradeUrl) {
             isLimitError = true
             errorMessage = errorData.message || 'Monthly import limit reached. Upgrade to Pro for unlimited imports.'
           }
-          
-          // Check for unauthorized or invalid API key
+
+          // Check for unauthorized or invalid token
           if (apiResponse.status === 401) {
-            errorMessage = 'Invalid API key. Please check your API key and try again.'
-            // Clear invalid API key
-            await chrome.storage.sync.remove(['apiKey'])
-            currentApiKey = null
-            updateApiKeyStatus(false)
+            errorMessage = 'Session expired. Please sign in again.'
+            // Clear invalid auth
+            await clearAuthState()
+            currentAuth = { authToken: null, userEmail: null }
+            updateAuthUI(false)
           }
         } catch (e) {
           // If JSON parsing fails, use default message
@@ -197,7 +209,7 @@ async function importListing() {
         errorMessage = `Server error (${apiResponse.status}): ${apiResponse.statusText}. Please check that the web app is running.`
         console.error('Non-JSON error response:', text.substring(0, 200))
       }
-      
+
       // For limit errors, show upgrade option
       if (isLimitError) {
         const upgradeEl = document.getElementById('upgrade-prompt')
@@ -205,18 +217,18 @@ async function importListing() {
           upgradeEl.classList.remove('hidden')
         }
       }
-      
+
       throw new Error(errorMessage)
     }
-    
+
     const { dealId } = await apiResponse.json()
-    
+
     statusEl.textContent = 'Success! Opening deal...'
-    
+
     // Open deal page
     const dealUrl = `${API_BASE_URL}/deals/${dealId}`
     await chrome.tabs.create({ url: dealUrl })
-    
+
     // Close popup after a short delay
     setTimeout(() => {
       window.close()
@@ -229,33 +241,30 @@ async function importListing() {
   }
 }
 
+// Listen for auth completion messages from content script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'authComplete') {
+    // Reload auth state and update UI
+    loadAuthState().then((auth) => {
+      currentAuth = auth
+      updateAuthUI(!!auth.authToken, auth.userEmail)
+    })
+  }
+})
+
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
-  // Load saved API key
-  currentApiKey = await loadApiKey()
-  updateApiKeyStatus(!!currentApiKey)
-  
+  // Load auth state
+  currentAuth = await loadAuthState()
+  updateAuthUI(!!currentAuth.authToken, currentAuth.userEmail)
+
   // Set up event listeners
   const importBtn = document.getElementById('import-btn')
   importBtn?.addEventListener('click', importListing)
-  
-  const saveApiKeyBtn = document.getElementById('save-api-key-btn')
-  saveApiKeyBtn?.addEventListener('click', handleSaveApiKey)
-  
-  // Allow Enter key to save API key
-  const apiKeyInput = document.getElementById('api-key-input')
-  apiKeyInput?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      handleSaveApiKey()
-    }
-  })
-  
-  // Clear input when focused if showing masked value
-  apiKeyInput?.addEventListener('focus', () => {
-    const input = apiKeyInput as HTMLInputElement
-    if (input.value === '••••••••••••••••') {
-      input.value = ''
-      input.type = 'text'
-    }
-  })
+
+  const signInBtn = document.getElementById('sign-in-btn')
+  signInBtn?.addEventListener('click', handleSignIn)
+
+  const signOutBtn = document.getElementById('sign-out-btn')
+  signOutBtn?.addEventListener('click', handleSignOut)
 })

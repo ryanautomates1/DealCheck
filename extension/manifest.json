@@ -10,6 +10,7 @@
   "host_permissions": [
     "https://www.zillow.com/*",
     "http://localhost:3000/*",
+    "https://getdealmetrics.com/*",
     "https://*/*"
   ],
   "action": {
@@ -19,6 +20,14 @@
     {
       "matches": ["https://www.zillow.com/*"],
       "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost:3000/auth/extension/success*",
+        "https://getdealmetrics.com/auth/extension/success*"
+      ],
+      "js": ["auth.js"],
       "run_at": "document_idle"
     }
   ],
