@@ -4,12 +4,23 @@ frontend:
     preBuild:
       commands:
         - npm ci
+        # Export all environment variables explicitly for Next.js build
+        - echo "Exporting environment variables for Next.js..."
+        - export NEXT_PUBLIC_SUPABASE_URL
+        - export NEXT_PUBLIC_SUPABASE_ANON_KEY  
+        - export SUPABASE_SERVICE_ROLE_KEY
+        - export USE_SUPABASE
+        - export NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$STRIPE_PUBLISHABLE_KEY
+        - export STRIPE_SECRET_KEY
+        - export STRIPE_WEBHOOK_SECRET
+        - export STRIPE_PRO_PRICE_ID=$STRIPE_PRICE_ID
     build:
       commands:
-        - echo "Checking environment variables..."
-        - echo "NEXT_PUBLIC_SUPABASE_URL is ${NEXT_PUBLIC_SUPABASE_URL:+SET}"
-        - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY is ${NEXT_PUBLIC_SUPABASE_ANON_KEY:+SET}"
-        - env | grep -i supabase || echo "No SUPABASE env vars found in environment"
+        - echo "=== Environment Variable Check ==="
+        - echo "NEXT_PUBLIC_SUPABASE_URL = ${NEXT_PUBLIC_SUPABASE_URL:-(not set)}"
+        - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY = ${NEXT_PUBLIC_SUPABASE_ANON_KEY:+[HIDDEN - SET]}"
+        - printenv | grep -E "^NEXT_PUBLIC" || echo "No NEXT_PUBLIC vars found"
+        - echo "=== Starting Next.js Build ==="
         - npm run build
   artifacts:
     baseDirectory: .next
@@ -19,13 +30,3 @@ frontend:
     paths:
       - node_modules/**/*
       - .next/cache/**/*
-  environment:
-    variables:
-      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
-      USE_SUPABASE: ${USE_SUPABASE}
-      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
-      STRIPE_PRO_PRICE_ID: ${STRIPE_PRICE_ID}
