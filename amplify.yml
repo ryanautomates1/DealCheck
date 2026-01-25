@@ -6,6 +6,9 @@ frontend:
         - npm ci
     build:
       commands:
+        - echo "Checking environment variables..."
+        - echo "NEXT_PUBLIC_SUPABASE_URL is ${NEXT_PUBLIC_SUPABASE_URL:+SET}"
+        - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY is ${NEXT_PUBLIC_SUPABASE_ANON_KEY:+SET}"
         - npm run build
   artifacts:
     baseDirectory: .next
