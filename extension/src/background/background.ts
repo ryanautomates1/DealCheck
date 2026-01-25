@@ -1,7 +1,7 @@
 // Background service worker for Chrome extension
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('DealCheck extension installed')
+  console.log('DealMetrics extension installed')
 })
 
 // Handle messages from content script

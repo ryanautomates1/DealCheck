@@ -1,12 +1,12 @@
-# DealCheck Underwriting Math Documentation (Revised)
+# DealMetrics Underwriting Math Documentation (Revised)
 
-This document describes the underwriting calculations used by DealCheck to evaluate residential real estate deals. The goal is to produce conservative, internally consistent, and decision-oriented metrics suitable for deal screening.
+This document describes the underwriting calculations used by DealMetrics to evaluate residential real estate deals. The goal is to produce conservative, internally consistent, and decision-oriented metrics suitable for deal screening.
 
 All calculations are performed server-side.
 
 ## Overview
 
-DealCheck models real estate economics using industry-standard formulas. Calculations are based on monthly cash flows, with annualized values shown where appropriate.
+DealMetrics models real estate economics using industry-standard formulas. Calculations are based on monthly cash flows, with annualized values shown where appropriate.
 
 **Key principles:**
 
@@ -291,7 +291,7 @@ Future versions may optionally include reserve requirements.
 
 ## Assumptions & Defaults
 
-When data is missing, DealCheck applies conservative defaults:
+When data is missing, DealMetrics applies conservative defaults:
 
 | Item | Default |
 |------|---------|
@@ -325,7 +325,7 @@ Estimated values are clearly labeled and should be confirmed by the user.
 
 ## Holding Period Analysis
 
-For investment properties, DealCheck provides multi-year projections to estimate total return over a holding period.
+For investment properties, DealMetrics provides multi-year projections to estimate total return over a holding period.
 
 ### Inputs
 

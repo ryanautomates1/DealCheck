@@ -1,4 +1,4 @@
-# DealCheck Implementation Summary
+# DealMetrics Implementation Summary
 
 ## ✅ Completed Features
 

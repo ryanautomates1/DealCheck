@@ -54,7 +54,7 @@ function PricingContent() {
       <nav className="border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="text-2xl font-bold text-white">
-            DealCheck
+            DealMetrics
           </Link>
           {user ? (
             <Link

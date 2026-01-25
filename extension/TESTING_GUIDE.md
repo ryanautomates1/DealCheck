@@ -27,7 +27,7 @@ The extension has been successfully built. The `extension/dist` directory contai
    - Select the `dist` folder (not the parent `extension` folder)
 
 4. **Verify Extension Loaded**
-   - You should see "DealCheck" in your extensions list
+   - You should see "DealMetrics" in your extensions list
    - The extension icon should appear in your Chrome toolbar
 
 ## Testing the Extension
@@ -43,14 +43,14 @@ The extension has been successfully built. The `extension/dist` directory contai
    - Example: `https://www.zillow.com/homedetails/...`
 
 2. **Open Extension Popup**
-   - Click the DealCheck extension icon in your Chrome toolbar
+   - Click the DealMetrics extension icon in your Chrome toolbar
    - The popup should appear with "Import current Zillow listing" button
 
 3. **Import Listing**
    - Click "Import current Zillow listing"
    - Watch for status messages:
      - "Extracting data..."
-     - "Importing to DealCheck..."
+     - "Importing to DealMetrics..."
      - "Success! Opening deal..."
 
 4. **Verify Results**
@@ -69,7 +69,7 @@ The extension has been successfully built. The `extension/dist` directory contai
 
 ### Background Worker Console
 - Go to `chrome://extensions/`
-- Find DealCheck extension
+- Find DealMetrics extension
 - Click "service worker" link (if available)
 
 ### Network Requests
@@ -108,7 +108,7 @@ npm run dev
 After making changes:
 1. Wait for rebuild (watch mode)
 2. Go to `chrome://extensions/`
-3. Click reload icon on DealCheck extension
+3. Click reload icon on DealMetrics extension
 4. Test again
 
 ## Next Steps

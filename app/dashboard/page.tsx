@@ -255,7 +255,7 @@ function DashboardContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold text-gray-900">DealCheck</h1>
+              <h1 className="text-2xl font-bold text-gray-900">DealMetrics</h1>
               {profile && (
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                   profile.subscription_tier === 'pro' 
@@ -356,7 +356,7 @@ function DashboardContent() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Get the DealCheck Chrome Extension</h3>
+                <h3 className="text-lg font-semibold">Get the DealMetrics Chrome Extension</h3>
                 <p className="text-blue-100 text-sm mt-1">
                   Import listings directly from real estate sites with one click. 
                   {profile?.subscription_tier === 'free' ? ' Free users get 2 imports/month.' : ' Unlimited imports with Pro!'}
@@ -364,7 +364,7 @@ function DashboardContent() {
               </div>
             </div>
             <a
-              href="https://chrome.google.com/webstore/detail/dealcheck/YOUR_EXTENSION_ID"
+              href="https://chrome.google.com/webstore/detail/dealmetrics/YOUR_EXTENSION_ID"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-5 py-2.5 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 transition-colors whitespace-nowrap"

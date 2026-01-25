@@ -1,6 +1,6 @@
-# DealCheck Setup Guide
+# DealMetrics Setup Guide
 
-This guide walks you through setting up Supabase authentication and Stripe payments for DealCheck.
+This guide walks you through setting up Supabase authentication and Stripe payments for DealMetrics.
 
 ## Prerequisites
 
@@ -25,7 +25,7 @@ The app will use local JSON file storage and skip authentication. To enable Supa
 
 1. Go to [supabase.com](https://supabase.com) and sign up/login
 2. Click **"New Project"**
-3. Name it **"DealCheck"** (or your preference)
+3. Name it **"DealMetrics"** (or your preference)
 4. Set a strong database password (save it!)
 5. Select the region closest to you
 6. Wait ~2 minutes for provisioning
@@ -228,7 +228,7 @@ CREATE INDEX IF NOT EXISTS idx_analyses_user_id ON public.analyses(user_id);
 ### Create Product
 
 1. Go to **Products > Add Product**
-2. Name: **"DealCheck Pro"**
+2. Name: **"DealMetrics Pro"**
 3. Add Price: **$9.99/month** (recurring)
 4. Copy the **Price ID**: `price_xxxxx`
 
@@ -288,7 +288,7 @@ The app will be available at [http://localhost:3000](http://localhost:3000).
 2. Enable **"Developer mode"** (top right toggle)
 3. Click **"Load unpacked"**
 4. Select the `extension/dist` folder
-5. The DealCheck extension icon should appear in your toolbar
+5. The DealMetrics extension icon should appear in your toolbar
 
 ---
 

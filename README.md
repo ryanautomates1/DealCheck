@@ -1,4 +1,4 @@
-# DealCheck - Real Estate Deal Analyzer
+# DealMetrics - Real Estate Deal Analyzer
 
 A Next.js 14 web application + Chrome extension for analyzing residential real estate deals.
 
@@ -9,7 +9,7 @@ A Next.js 14 web application + Chrome extension for analyzing residential real e
 ### Flow
 
 1. User opens Zillow listing in browser
-2. User clicks Chrome extension: "Import to DealCheck"
+2. User clicks Chrome extension: "Import to DealMetrics"
 3. Extension extracts data from the page
 4. Extension POSTs structured payload to web app API
 5. Web app creates/updates Deal

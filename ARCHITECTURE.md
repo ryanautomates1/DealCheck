@@ -1,4 +1,4 @@
-# DealCheck Architecture
+# DealMetrics Architecture
 
 ## Critical Constraint
 

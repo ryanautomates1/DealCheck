@@ -182,7 +182,7 @@ export function extractFromSemanticDOM(): Record<string, ExtractedField> {
     const addressElement = findExactElement(addressText)
     
     if (addressElement) {
-      console.log('[DealCheck] Found address element:', addressElement.tagName, addressElement.className)
+      console.log('[DealMetrics] Found address element:', addressElement.tagName, addressElement.className)
       
       // Walk up the DOM to find a container that has BOTH the address AND a price
       let container: Element | null = addressElement
@@ -197,7 +197,7 @@ export function extractFromSemanticDOM(): Record<string, ExtractedField> {
           // The header block with price + address is usually < 500 chars
           if (containerText.length < 1000) {
             fields.listPrice = { value: price, confidence: 0.98, source: 'semantic-dom' }
-            console.log('[DealCheck] Found price in address container:', price)
+            console.log('[DealMetrics] Found price in address container:', price)
             break
           }
         }
@@ -214,7 +214,7 @@ export function extractFromSemanticDOM(): Record<string, ExtractedField> {
     const price = extractPriceFromText(pageText)
     if (price) {
       fields.listPrice = { value: price, confidence: 0.7, source: 'semantic-dom' }
-      console.log('[DealCheck] Found price via fallback text search:', price)
+      console.log('[DealMetrics] Found price via fallback text search:', price)
     }
   }
   

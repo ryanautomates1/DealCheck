@@ -3,7 +3,7 @@ import './globals.css'
 import { AuthProvider } from '@/components/AuthProvider'
 
 export const metadata: Metadata = {
-  title: 'DealCheck - Real Estate Deal Analyzer',
+  title: 'DealMetrics - Real Estate Deal Analyzer',
   description: 'Analyze residential real estate deals',
 }
 

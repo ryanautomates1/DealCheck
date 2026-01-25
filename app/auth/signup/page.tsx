@@ -84,7 +84,7 @@ export default function SignupPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">DealCheck</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">DealMetrics</h1>
           <p className="text-blue-200">Start analyzing deals for free</p>
         </div>
 

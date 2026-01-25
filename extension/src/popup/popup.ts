@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.VITE_API_BASE_URL || 'https://getdealcheck.com'
+const API_BASE_URL = process.env.VITE_API_BASE_URL || 'https://getdealmetrics.com'
 
 interface ImportPayload {
   zillowUrl: string
@@ -73,7 +73,7 @@ async function importListing() {
       downPaymentPct,
     }
     
-    statusEl.textContent = 'Importing to DealCheck...'
+    statusEl.textContent = 'Importing to DealMetrics...'
     
     console.log('Sending payload to:', `${API_BASE_URL}/api/import`)
     console.log('Payload:', payload)
@@ -108,7 +108,7 @@ async function importListing() {
           
           // Check for unauthorized
           if (apiResponse.status === 401) {
-            errorMessage = 'Please sign in to DealCheck first.'
+            errorMessage = 'Please sign in to DealMetrics first.'
           }
         } catch (e) {
           // If JSON parsing fails, use default message

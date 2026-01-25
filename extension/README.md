@@ -1,6 +1,6 @@
-# DealCheck Chrome Extension
+# DealMetrics Chrome Extension
 
-Chrome extension for importing Zillow listings into DealCheck.
+Chrome extension for importing Zillow listings into DealMetrics.
 
 ## Development
 
