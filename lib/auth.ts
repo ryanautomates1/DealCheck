@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import crypto from 'crypto'
+import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY } from './config'
 
 /**
  * Check if we should use Supabase (always true in production)
@@ -27,8 +28,8 @@ export async function getCurrentUserId(): Promise<string> {
   // Get user from Supabase session
   const cookieStore = cookies()
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
     {
       cookies: {
         get(name: string) {
@@ -58,8 +59,8 @@ export async function getUserIdFromApiKey(apiKey: string): Promise<string> {
   }
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
     {
       cookies: {
         get() { return undefined },
@@ -91,8 +92,8 @@ export async function getUserIdFromToken(token: string): Promise<string> {
   }
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
     {
       cookies: {
         get() { return undefined },
@@ -164,8 +165,8 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 
   const cookieStore = cookies()
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
     {
       cookies: {
         get(name: string) {
@@ -214,8 +215,8 @@ export async function checkAndIncrementImportCount(userId?: string): Promise<{ a
   }
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!, // Use service role to bypass RLS for update
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY, // Use service role to bypass RLS for update
     {
       cookies: {
         get() { return undefined },
@@ -230,8 +231,8 @@ export async function checkAndIncrementImportCount(userId?: string): Promise<{ a
   if (!targetUserId) {
     const cookieStore = cookies()
     const sessionSupabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY,
       {
         cookies: {
           get(name: string) {
