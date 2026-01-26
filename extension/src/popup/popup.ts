@@ -71,7 +71,9 @@ function updateAuthUI(isAuthenticated: boolean, email?: string | null) {
 
 // Handle sign in - open auth page
 function handleSignIn() {
-  const authUrl = `${API_BASE_URL}/auth/extension`
+  // Add cache-busting parameter to ensure fresh page load
+  const cacheBuster = Date.now()
+  const authUrl = `${API_BASE_URL}/auth/extension?_=${cacheBuster}`
   chrome.tabs.create({ url: authUrl })
 }
 
