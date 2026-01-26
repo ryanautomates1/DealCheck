@@ -27,6 +27,9 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# generated secrets (created during build)
+/lib/generated-secrets.ts
+
 # vercel
 .vercel
 

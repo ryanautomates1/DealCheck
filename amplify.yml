@@ -5,6 +5,8 @@ frontend:
       commands:
         - npm ci
         - rm -rf .next/cache
+        - echo "=== Generating secrets config ==="
+        - node scripts/generate-secrets.js
     build:
       commands:
         - echo "=== Building with hardcoded public env vars ==="
