@@ -536,11 +536,15 @@ export default function DealDetailPage() {
                   const oldPurchaseType = deal.purchaseType
                   handleInputChange('purchaseType', purchaseType || null)
                   
-                  // If Primary Residence, set rent to 0, vacancy to 0, and management to 0
+                  // If Primary Residence, set appropriate defaults
                   if (purchaseType === 'primary_residence') {
                     handleInputChange('rentMonthly', 0)
                     handleInputChange('vacancyRate', 0)
                     handleInputChange('managementRate', 0)
+                    // Set lower maintenance/capex rates for primary residence (0.5% each = 1% total annually)
+                    // This is the industry standard for homeowner maintenance reserves
+                    handleInputChange('maintenanceRate', 0.5)
+                    handleInputChange('capexRate', 0.5)
                     // Clear multi-unit fields
                     handleInputChange('numberOfUnits', null)
                     handleInputChange('rentPerUnit', null)
@@ -1065,7 +1069,7 @@ export default function DealDetailPage() {
               <div>
                 <h3 className="text-sm font-semibold text-blue-900 mb-1">Primary Residence</h3>
                 <p className="text-sm text-blue-800">
-                  Rental income is set to $0 for primary residences. Vacancy and management rates are also set to 0%.
+                  Rental income, vacancy, and management rates are set to $0. Maintenance and CapEx rates are set to 0.5% each (1% total annually) — the industry standard for homeowner reserves.
                 </p>
               </div>
             </div>
@@ -1080,7 +1084,7 @@ export default function DealDetailPage() {
           {deal.purchaseType === 'primary_residence' && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                For primary residences, vacancy and management rates are set to 0%. Maintenance and CapEx still apply for long-term planning.
+                For primary residences, vacancy and management rates are set to 0%. Maintenance and CapEx are set to 0.5% each (1% of home value annually) — you can adjust these if needed.
               </p>
             </div>
           )}
