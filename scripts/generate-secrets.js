@@ -9,6 +9,12 @@
 const fs = require('fs');
 const path = require('path');
 
+// Debug: list all env vars that contain SUPABASE
+console.log('=== Debug: Searching for SUPABASE env vars ===');
+Object.keys(process.env).filter(k => k.includes('SUPABASE')).forEach(k => {
+  console.log(`  ${k}: ${process.env[k] ? 'SET (length: ' + process.env[k].length + ')' : 'NOT SET'}`);
+});
+
 const secrets = {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
