@@ -15,14 +15,25 @@ export default function ExtensionLoginPage() {
     setError(null)
     setLoading(true)
 
+    // Create a timeout promise
+    const timeout = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timed out. Please try again.')), 15000)
+    })
+
     try {
       const supabase = createClient()
       console.log('[ExtensionLogin] Attempting sign in for:', email)
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+      // Race between the sign in and the timeout
+      const result = await Promise.race([
+        supabase.auth.signInWithPassword({
+          email,
+          password,
+        }),
+        timeout
+      ]) as { data: any; error: any }
+
+      const { data, error } = result
 
       console.log('[ExtensionLogin] Sign in response:', { 
         hasSession: !!data?.session, 
