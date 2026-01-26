@@ -11,56 +11,32 @@ export default function ExtensionLoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('[ExtensionLogin] Form submitted')
     setError(null)
     setLoading(true)
 
-    // Create a timeout promise
-    const timeout = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Request timed out. Please try again.')), 15000)
-    })
-
     try {
       const supabase = createClient()
-      console.log('[ExtensionLogin] Attempting sign in for:', email)
-      
-      // Race between the sign in and the timeout
-      const result = await Promise.race([
-        supabase.auth.signInWithPassword({
-          email,
-          password,
-        }),
-        timeout
-      ]) as { data: any; error: any }
-
-      const { data, error } = result
-
-      console.log('[ExtensionLogin] Sign in response:', { 
-        hasSession: !!data?.session, 
-        hasError: !!error,
-        errorMessage: error?.message 
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       })
 
       if (error) {
         setError(error.message)
-        setLoading(false)
         return
       }
 
       if (!data?.session) {
         setError('Login failed. Please check your credentials and try again.')
-        setLoading(false)
         return
       }
 
       // Redirect to success page with the access token
-      // The content script on the success page will capture this
       const successUrl = `/auth/extension/success?token=${data.session.access_token}&email=${encodeURIComponent(email)}`
-      console.log('[ExtensionLogin] Redirecting to:', successUrl.substring(0, 50) + '...')
       window.location.href = successUrl
     } catch (err: any) {
-      console.error('[ExtensionLogin] Error:', err)
       setError(err.message || 'An error occurred. Please try again.')
+    } finally {
       setLoading(false)
     }
   }
