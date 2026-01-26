@@ -201,8 +201,9 @@ export default function DealDetailPage() {
         rentMonthly: deal.purchaseType === 'primary_residence' ? 0 : (deal.rentMonthly || 0),
         otherIncomeMonthly: deal.otherIncomeMonthly || 0,
         vacancyRate: deal.purchaseType === 'primary_residence' ? 0 : (deal.vacancyRate || 0),
-        maintenanceRate: deal.maintenanceRate!,
-        capexRate: deal.capexRate!,
+        // For primary residence: use 0.5% each (1% total annually) for maintenance reserve
+        maintenanceRate: deal.purchaseType === 'primary_residence' ? 0.5 : deal.maintenanceRate!,
+        capexRate: deal.purchaseType === 'primary_residence' ? 0.5 : deal.capexRate!,
         managementRate: deal.purchaseType === 'primary_residence' ? 0 : (deal.managementRate || 0),
         // Holding period inputs (for all property types)
         holdingPeriodYears: deal.holdingPeriodYears || 10,
@@ -1144,55 +1145,73 @@ export default function DealDetailPage() {
               </div>
             )}
 
-            {/* Maintenance Rate - Always editable */}
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <label className="block text-sm font-medium text-gray-700">Maintenance Rate (%) *</label>
-                {deal.assumedFields?.includes('maintenanceRate') && (
-                  <span className="px-2 py-0.5 text-xs font-medium rounded bg-yellow-100 text-yellow-800">
-                    Assumed
-                  </span>
-                )}
+            {/* Maintenance Rate - Hidden for primary residence (fixed at 0.5%) */}
+            {deal.purchaseType === 'primary_residence' ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Maintenance Reserve</label>
+                <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-600">
+                  0.5% (fixed for primary residence)
+                </div>
               </div>
-              <div className="relative">
-                <input
-                  ref={el => { fieldRefs.current['maintenanceRate'] = el }}
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={deal.maintenanceRate ?? ''}
-                  onChange={(e) => handleInputChange('maintenanceRate', parsePercent(e.target.value))}
-                  className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black"
-                />
-                <span className="absolute right-3 top-2 text-gray-500">%</span>
+            ) : (
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Maintenance Rate (%) *</label>
+                  {deal.assumedFields?.includes('maintenanceRate') && (
+                    <span className="px-2 py-0.5 text-xs font-medium rounded bg-yellow-100 text-yellow-800">
+                      Assumed
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    ref={el => { fieldRefs.current['maintenanceRate'] = el }}
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={deal.maintenanceRate ?? ''}
+                    onChange={(e) => handleInputChange('maintenanceRate', parsePercent(e.target.value))}
+                    className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black"
+                  />
+                  <span className="absolute right-3 top-2 text-gray-500">%</span>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* CapEx Rate - Always editable */}
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <label className="block text-sm font-medium text-gray-700">CapEx Rate (%) *</label>
-                {deal.assumedFields?.includes('capexRate') && (
-                  <span className="px-2 py-0.5 text-xs font-medium rounded bg-yellow-100 text-yellow-800">
-                    Assumed
-                  </span>
-                )}
+            {/* CapEx Rate - Hidden for primary residence (fixed at 0.5%) */}
+            {deal.purchaseType === 'primary_residence' ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">CapEx Reserve</label>
+                <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-600">
+                  0.5% (fixed for primary residence)
+                </div>
               </div>
-              <div className="relative">
-                <input
-                  ref={el => { fieldRefs.current['capexRate'] = el }}
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={deal.capexRate ?? ''}
-                  onChange={(e) => handleInputChange('capexRate', parsePercent(e.target.value))}
-                  className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black"
-                />
-                <span className="absolute right-3 top-2 text-gray-500">%</span>
+            ) : (
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-medium text-gray-700">CapEx Rate (%) *</label>
+                  {deal.assumedFields?.includes('capexRate') && (
+                    <span className="px-2 py-0.5 text-xs font-medium rounded bg-yellow-100 text-yellow-800">
+                      Assumed
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    ref={el => { fieldRefs.current['capexRate'] = el }}
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={deal.capexRate ?? ''}
+                    onChange={(e) => handleInputChange('capexRate', parsePercent(e.target.value))}
+                    className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black"
+                  />
+                  <span className="absolute right-3 top-2 text-gray-500">%</span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
