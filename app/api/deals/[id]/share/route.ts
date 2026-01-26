@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUserId } from '@/lib/auth'
 import { dealRepository, shareRepository } from '@/lib/repositories'
 
+// Get the app URL from environment variable, fallback to request origin for local dev
+function getAppUrl(request: NextRequest): string {
+  // Always prefer the configured app URL in production
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  if (appUrl && appUrl !== 'http://localhost:3000') {
+    return appUrl
+  }
+  // Fallback to request origin for local development
+  return request.nextUrl.origin
+}
+
 // POST /api/deals/[id]/share
 export async function POST(
   request: NextRequest,
@@ -31,9 +42,10 @@ export async function POST(
       })
     }
     
+    const baseUrl = getAppUrl(request)
     return NextResponse.json({ 
       token: shareLink.token,
-      url: `${request.nextUrl.origin}/share/${shareLink.token}`,
+      url: `${baseUrl}/share/${shareLink.token}`,
     })
   } catch (error: any) {
     if (error.message === 'Unauthorized') {
