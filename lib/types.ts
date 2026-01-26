@@ -213,3 +213,58 @@ export interface HoldingPeriodOutputs {
   irr: number // Internal Rate of Return
   equityMultiple: number // Total return / Initial investment
 }
+
+// Primary Residence Analysis Types (homeowner-centric metrics)
+
+export interface PrimaryResidenceOutputs {
+  // Headline metrics
+  allInMonthlyCost: number // P&I + taxes + insurance + HOA + maintenance reserve
+  mortgagePI: number // Monthly principal & interest
+  monthlyTaxes: number
+  monthlyInsurance: number
+  monthlyHOA: number
+  monthlyMaintenanceReserve: number
+  
+  // Secondary metrics
+  cashRequiredAtClose: number // Down payment + closing costs + initial repairs
+  
+  // Rent comparison (if marketRent is provided)
+  monthlyCostVsRent?: number // All-in cost minus market rent (positive = premium to own)
+  
+  // Annual view
+  annualGrossCost: number // Total annual outflow
+  annualPrincipalPaydown: number // Equity building portion
+  annualNetCostOfOwnership: number // Gross cost - principal paydown
+}
+
+export interface PrimaryResidenceHoldingPeriodOutputs {
+  // Break-even analysis
+  breakEvenYearBuyVsRent: number | null // Years until buying beats renting (null if never)
+  
+  // Cost over time
+  netCostOfHousingTotal: number // Total housing cost over period
+  netCostOfHousingMonthlyEquivalent: number // Monthly average
+  
+  // Equity accumulation
+  equityFromPrincipalPaydown: number // Total principal paid
+  equityFromAppreciation: number // Total appreciation gain
+  totalEquityAccumulation: number // Combined
+  
+  // Exit scenarios at different years
+  exitScenarios: {
+    year: number
+    netProceedsFromSale: number
+    totalHousingCostToDate: number
+    netPositionVsRenting: number // Positive = ownership ahead
+  }[]
+  
+  // Sensitivity analysis
+  flatPriceScenario: {
+    netProceedsAtSale: number
+    effectiveMonthlyCost: number
+  }
+  negativePriceScenario: { // -10% from purchase
+    netProceedsAtSale: number
+    effectiveMonthlyCost: number
+  }
+}

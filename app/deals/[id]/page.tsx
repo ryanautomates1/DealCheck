@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Deal, Analysis, ImportStatus, HoldingPeriodOutputs } from '@/lib/types'
+import { Deal, Analysis, ImportStatus, HoldingPeriodOutputs, PrimaryResidenceOutputs, PrimaryResidenceHoldingPeriodOutputs } from '@/lib/types'
 
 const statusColors: Record<ImportStatus, string> = {
   success: 'bg-green-100 text-green-800',
@@ -27,12 +27,15 @@ export default function DealDetailPage() {
   const [deal, setDeal] = useState<Deal | null>(null)
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
   const [holdingPeriodAnalysis, setHoldingPeriodAnalysis] = useState<HoldingPeriodOutputs | null>(null)
+  const [primaryResidenceOutputs, setPrimaryResidenceOutputs] = useState<PrimaryResidenceOutputs | null>(null)
+  const [primaryResidenceHoldingPeriod, setPrimaryResidenceHoldingPeriod] = useState<PrimaryResidenceHoldingPeriodOutputs | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [showCashFlowSchedule, setShowCashFlowSchedule] = useState(false)
+  const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false)
   
   const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
@@ -224,6 +227,12 @@ export default function DealDetailPage() {
       setAnalysis(data.analysis)
       if (data.holdingPeriodAnalysis) {
         setHoldingPeriodAnalysis(data.holdingPeriodAnalysis)
+      }
+      if (data.primaryResidenceOutputs) {
+        setPrimaryResidenceOutputs(data.primaryResidenceOutputs)
+      }
+      if (data.primaryResidenceHoldingPeriod) {
+        setPrimaryResidenceHoldingPeriod(data.primaryResidenceHoldingPeriod)
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred')
@@ -1313,194 +1322,295 @@ export default function DealDetailPage() {
 
           {analysis && (
             <div className="mt-6 space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-800 font-medium mb-1 flex items-center gap-1">
-                    Total Monthly Payment
-                    <div className="group relative inline-block">
-                      <svg className="w-4 h-4 text-gray-500 cursor-help hover:text-gray-700" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                      </svg>
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 z-50 pointer-events-none">
-                        <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl">
-                          Total of all monthly expenses: Principal & Interest, PMI, Taxes, Insurance, HOA, and Utilities.
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+              {/* PRIMARY RESIDENCE: Homeowner-centric metrics */}
+              {deal.purchaseType === 'primary_residence' && primaryResidenceOutputs ? (
+                <>
+                  {/* Headline Metrics */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* All-In Monthly Cost - Primary metric */}
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-lg border-2 border-blue-200">
+                      <div className="text-sm text-blue-700 font-semibold mb-1 flex items-center gap-1">
+                        All-In Monthly Cost
+                        <div className="group relative inline-block">
+                          <svg className="w-4 h-4 text-blue-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                          </svg>
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-72 z-50 pointer-events-none">
+                            <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl">
+                              Your complete monthly cost to own this home: Mortgage (P&I), property taxes, insurance, HOA, and maintenance reserve. This is what you actually pay each month.
+                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                            </div>
+                          </div>
                         </div>
+                      </div>
+                      <div className="text-3xl font-bold text-blue-900">${Math.round(primaryResidenceOutputs.allInMonthlyCost).toLocaleString()}<span className="text-lg font-normal">/mo</span></div>
+                      <div className="text-xs text-blue-600 mt-2">${Math.round(primaryResidenceOutputs.allInMonthlyCost * 12).toLocaleString()}/year</div>
+                    </div>
+
+                    {/* Cash Required at Close */}
+                    <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-5 rounded-lg border-2 border-amber-200">
+                      <div className="text-sm text-amber-700 font-semibold mb-1 flex items-center gap-1">
+                        Cash to Close
+                        <div className="group relative inline-block">
+                          <svg className="w-4 h-4 text-amber-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                          </svg>
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 z-50 pointer-events-none">
+                            <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl">
+                              Total cash you need to bring to closing: down payment + closing costs + any initial repairs.
+                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-3xl font-bold text-amber-900">${Math.round(primaryResidenceOutputs.cashRequiredAtClose).toLocaleString()}</div>
+                      <div className="text-xs text-amber-600 mt-2">Down payment + closing + repairs</div>
+                    </div>
+
+                    {/* Annual Net Cost (True Cost) */}
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-5 rounded-lg border-2 border-purple-200">
+                      <div className="text-sm text-purple-700 font-semibold mb-1 flex items-center gap-1">
+                        True Annual Cost
+                        <div className="group relative inline-block">
+                          <svg className="w-4 h-4 text-purple-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                          </svg>
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-72 z-50 pointer-events-none">
+                            <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl">
+                              Your real cost of housing after accounting for equity building. Total annual payments minus the principal portion (which builds your equity).
+                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-3xl font-bold text-purple-900">${Math.round(primaryResidenceOutputs.annualNetCostOfOwnership).toLocaleString()}<span className="text-lg font-normal">/yr</span></div>
+                      <div className="text-xs text-purple-600 mt-2">${Math.round(primaryResidenceOutputs.annualNetCostOfOwnership / 12).toLocaleString()}/mo effective cost</div>
+                    </div>
+                  </div>
+
+                  {/* Cost Breakdown */}
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Monthly Cost Breakdown</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                      <div className="flex flex-col">
+                        <span className="text-gray-500 text-xs">Mortgage (P&I)</span>
+                        <span className="font-semibold text-gray-900">${Math.round(primaryResidenceOutputs.mortgagePI).toLocaleString()}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-gray-500 text-xs">Property Taxes</span>
+                        <span className="font-semibold text-gray-900">${Math.round(primaryResidenceOutputs.monthlyTaxes).toLocaleString()}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-gray-500 text-xs">Insurance</span>
+                        <span className="font-semibold text-gray-900">${Math.round(primaryResidenceOutputs.monthlyInsurance).toLocaleString()}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-gray-500 text-xs">HOA</span>
+                        <span className="font-semibold text-gray-900">${Math.round(primaryResidenceOutputs.monthlyHOA).toLocaleString()}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-gray-500 text-xs">Maintenance Reserve</span>
+                        <span className="font-semibold text-gray-900">${Math.round(primaryResidenceOutputs.monthlyMaintenanceReserve).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="text-xl font-semibold text-gray-900">${analysis.outputs.totalMonthlyPayment.toLocaleString()}</div>
-                </div>
-                {/* NOI - de-emphasized for primary residence */}
-                <div className={`p-4 rounded-lg ${deal.purchaseType === 'primary_residence' ? 'bg-gray-100 opacity-75' : 'bg-gray-50'}`}>
-                  <div className={`text-sm font-medium mb-1 flex items-center gap-1 ${deal.purchaseType === 'primary_residence' ? 'text-gray-500' : 'text-gray-800'}`}>
-                    NOI (Annual)
-                    {deal.purchaseType === 'primary_residence' && (
-                      <span className="text-xs text-gray-400 ml-1">(for reference)</span>
+
+                  {/* Equity Building Insight */}
+                  <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <div>
+                        <h4 className="text-sm font-semibold text-green-800">Equity Building</h4>
+                        <p className="text-sm text-green-700 mt-1">
+                          Of your ${Math.round(primaryResidenceOutputs.allInMonthlyCost).toLocaleString()}/mo payment, approximately{' '}
+                          <span className="font-semibold">${Math.round(primaryResidenceOutputs.annualPrincipalPaydown / 12).toLocaleString()}/mo</span>{' '}
+                          goes toward building equity (principal paydown). This is not an expense—it&apos;s money you keep as home equity.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Advanced Investment Metrics - Hidden by default */}
+                  <div className="border-t border-gray-200 pt-4">
+                    <button
+                      onClick={() => setShowAdvancedMetrics(!showAdvancedMetrics)}
+                      className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                    >
+                      <svg className={`w-4 h-4 transition-transform ${showAdvancedMetrics ? 'rotate-90' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      </svg>
+                      {showAdvancedMetrics ? 'Hide' : 'Show'} investment metrics (for reference)
+                    </button>
+                    
+                    {showAdvancedMetrics && (
+                      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 opacity-75">
+                        <div className="bg-gray-100 p-3 rounded-lg">
+                          <div className="text-xs text-gray-500 mb-1">Cap Rate</div>
+                          <div className="text-lg font-semibold text-gray-600">{analysis.outputs.capRate.toFixed(2)}%</div>
+                        </div>
+                        <div className="bg-gray-100 p-3 rounded-lg">
+                          <div className="text-xs text-gray-500 mb-1">Cash-on-Cash</div>
+                          <div className="text-lg font-semibold text-gray-600">{analysis.outputs.cashOnCash.toFixed(2)}%</div>
+                        </div>
+                        <div className="bg-gray-100 p-3 rounded-lg">
+                          <div className="text-xs text-gray-500 mb-1">NOI (Annual)</div>
+                          <div className="text-lg font-semibold text-gray-600">${analysis.outputs.noiAnnual.toLocaleString()}</div>
+                        </div>
+                        <div className="bg-gray-100 p-3 rounded-lg">
+                          <div className="text-xs text-gray-500 mb-1">DSCR</div>
+                          <div className="text-lg font-semibold text-gray-600">{analysis.outputs.dscr.toFixed(2)}</div>
+                        </div>
+                      </div>
                     )}
-                    <div className="group relative inline-block">
-                      <svg className="w-4 h-4 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                      </svg>
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 z-10">
-                        <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
-                          {deal.purchaseType === 'primary_residence'
-                            ? 'Net Operating Income is an investment metric. For primary residences, this is always negative (no income minus expenses).'
-                            : 'Net Operating Income: Annual income after operating expenses but before debt service. Measures property profitability.'}
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </>
+              ) : (
+                /* INVESTMENT PROPERTIES: Original metrics grid */
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="text-sm text-gray-800 font-medium mb-1 flex items-center gap-1">
+                      Total Monthly Payment
+                      <div className="group relative inline-block">
+                        <svg className="w-4 h-4 text-gray-500 cursor-help hover:text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 z-50 pointer-events-none">
+                          <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl">
+                            Total of all monthly expenses: Principal & Interest, PMI, Taxes, Insurance, HOA, and Utilities.
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                          </div>
                         </div>
                       </div>
                     </div>
+                    <div className="text-xl font-semibold text-gray-900">${analysis.outputs.totalMonthlyPayment.toLocaleString()}</div>
                   </div>
-                  <div className={`text-xl font-semibold ${deal.purchaseType === 'primary_residence' ? 'text-gray-500' : 'text-gray-900'}`}>
-                    ${analysis.outputs.noiAnnual.toLocaleString()}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="text-sm font-medium mb-1 flex items-center gap-1 text-gray-800">
+                      NOI (Annual)
+                      <div className="group relative inline-block">
+                        <svg className="w-4 h-4 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 z-10">
+                          <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
+                            Net Operating Income: Annual income after operating expenses but before debt service. Measures property profitability.
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-xl font-semibold text-gray-900">${analysis.outputs.noiAnnual.toLocaleString()}</div>
                   </div>
-                </div>
-                {/* Cash Flow / Housing Cost - framed differently by purchase type */}
-                <div className={`p-4 rounded-lg ${
-                  deal.purchaseType === 'primary_residence' 
-                    ? 'bg-gray-50' 
-                    : deal.purchaseType === 'house_hack'
+                  {/* Cash Flow */}
+                  <div className={`p-4 rounded-lg ${
+                    deal.purchaseType === 'house_hack'
                       ? 'bg-purple-50 border-2 border-purple-200'
                       : 'bg-blue-50 border-2 border-blue-200'
-                }`}>
-                  <div className="text-sm text-gray-800 font-medium mb-1 flex items-center gap-1">
-                    {deal.purchaseType === 'primary_residence' 
-                      ? 'Annual Housing Cost' 
-                      : deal.purchaseType === 'house_hack'
-                        ? 'Net Housing Cost'
-                        : 'Cash Flow (Annual)'}
-                    <div className="group relative inline-block">
-                      <svg className="w-4 h-4 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                      </svg>
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 z-10">
-                        <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
-                          {deal.purchaseType === 'primary_residence' 
-                            ? 'Your total annual cost to own this home, including all expenses. This is your cost of living here.'
-                            : deal.purchaseType === 'house_hack'
+                  }`}>
+                    <div className="text-sm text-gray-800 font-medium mb-1 flex items-center gap-1">
+                      {deal.purchaseType === 'house_hack' ? 'Net Housing Cost' : 'Cash Flow (Annual)'}
+                      <div className="group relative inline-block">
+                        <svg className="w-4 h-4 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 z-10">
+                          <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
+                            {deal.purchaseType === 'house_hack'
                               ? 'Your net housing cost after rental income from other units offsets expenses. Negative = you live for free + profit!'
                               : 'Annual profit or loss after all expenses including debt service. Positive = cash flow positive, Negative = losing money monthly.'}
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  {deal.purchaseType === 'primary_residence' ? (
-                    <div className="text-xl font-semibold text-gray-900">
-                      ${Math.abs(analysis.outputs.cashFlowAnnual).toLocaleString()}/yr
-                      <span className="text-sm font-normal text-gray-600 ml-1">
-                        (${Math.round(Math.abs(analysis.outputs.cashFlowAnnual) / 12).toLocaleString()}/mo)
-                      </span>
-                    </div>
-                  ) : deal.purchaseType === 'house_hack' ? (
-                    <div className={`text-xl font-semibold ${analysis.outputs.cashFlowAnnual >= 0 ? 'text-green-700' : 'text-purple-700'}`}>
-                      {analysis.outputs.cashFlowAnnual >= 0 ? (
-                        <>
-                          <span className="text-green-700">FREE + ${analysis.outputs.cashFlowAnnual.toLocaleString()}/yr profit</span>
-                          <span className="text-sm font-normal text-green-600 ml-1">
-                            (${Math.round(analysis.outputs.cashFlowAnnual / 12).toLocaleString()}/mo)
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          ${Math.abs(analysis.outputs.cashFlowAnnual).toLocaleString()}/yr
-                          <span className="text-sm font-normal text-purple-600 ml-1">
-                            (${Math.round(Math.abs(analysis.outputs.cashFlowAnnual) / 12).toLocaleString()}/mo to live here)
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <div className={`text-xl font-semibold ${analysis.outputs.cashFlowAnnual >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                      ${analysis.outputs.cashFlowAnnual.toLocaleString()}
-                      <span className="text-sm font-normal ml-1">
-                        (${Math.round(analysis.outputs.cashFlowAnnual / 12).toLocaleString()}/mo)
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Cap Rate - highlighted for investment, de-emphasized for primary */}
-                <div className={`p-4 rounded-lg ${deal.purchaseType !== 'primary_residence' ? 'bg-green-50 border-2 border-green-200' : 'bg-gray-100 opacity-75'}`}>
-                  <div className={`text-sm font-medium mb-1 flex items-center gap-1 ${deal.purchaseType === 'primary_residence' ? 'text-gray-500' : 'text-gray-800'}`}>
-                    Cap Rate
-                    {deal.purchaseType === 'primary_residence' && (
-                      <span className="text-xs text-gray-400 ml-1">(for reference)</span>
+                    {deal.purchaseType === 'house_hack' ? (
+                      <div className={`text-xl font-semibold ${analysis.outputs.cashFlowAnnual >= 0 ? 'text-green-700' : 'text-purple-700'}`}>
+                        {analysis.outputs.cashFlowAnnual >= 0 ? (
+                          <>
+                            <span className="text-green-700">FREE + ${analysis.outputs.cashFlowAnnual.toLocaleString()}/yr profit</span>
+                            <span className="text-sm font-normal text-green-600 ml-1">
+                              (${Math.round(analysis.outputs.cashFlowAnnual / 12).toLocaleString()}/mo)
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            ${Math.abs(analysis.outputs.cashFlowAnnual).toLocaleString()}/yr
+                            <span className="text-sm font-normal text-purple-600 ml-1">
+                              (${Math.round(Math.abs(analysis.outputs.cashFlowAnnual) / 12).toLocaleString()}/mo to live here)
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div className={`text-xl font-semibold ${analysis.outputs.cashFlowAnnual >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                        ${analysis.outputs.cashFlowAnnual.toLocaleString()}
+                        <span className="text-sm font-normal ml-1">
+                          (${Math.round(analysis.outputs.cashFlowAnnual / 12).toLocaleString()}/mo)
+                        </span>
+                      </div>
                     )}
-                    <div className="group relative inline-block">
-                      <svg className="w-4 h-4 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                      </svg>
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 z-10">
-                        <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
-                          {deal.purchaseType === 'primary_residence'
-                            ? 'Cap Rate is an investment metric. For primary residences, this shows what return you\'d get if you rented the property.'
-                            : 'Capitalization Rate: Annual return on purchase price assuming all-cash purchase. Formula: (NOI Annual / Purchase Price) × 100. 4-6% typical, 8%+ high returns.'}
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+
+                  {/* Cap Rate */}
+                  <div className="bg-green-50 border-2 border-green-200 p-4 rounded-lg">
+                    <div className="text-sm font-medium mb-1 flex items-center gap-1 text-gray-800">
+                      Cap Rate
+                      <div className="group relative inline-block">
+                        <svg className="w-4 h-4 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 z-10">
+                          <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
+                            Capitalization Rate: Annual return on purchase price assuming all-cash purchase. Formula: (NOI Annual / Purchase Price) × 100. 4-6% typical, 8%+ high returns.
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                          </div>
                         </div>
                       </div>
                     </div>
+                    <div className="text-xl font-semibold text-green-700">{analysis.outputs.capRate.toFixed(2)}%</div>
                   </div>
-                  <div className={`text-xl font-semibold ${deal.purchaseType === 'primary_residence' ? 'text-gray-500' : 'text-green-700'}`}>
-                    {analysis.outputs.capRate.toFixed(2)}%
-                  </div>
-                </div>
 
-                {/* Cash-on-Cash - highlighted for investment, de-emphasized for primary */}
-                <div className={`p-4 rounded-lg ${deal.purchaseType !== 'primary_residence' ? 'bg-green-50 border-2 border-green-200' : 'bg-gray-100 opacity-75'}`}>
-                  <div className={`text-sm font-medium mb-1 flex items-center gap-1 ${deal.purchaseType === 'primary_residence' ? 'text-gray-500' : 'text-gray-800'}`}>
-                    Cash-on-Cash Return
-                    {deal.purchaseType === 'primary_residence' && (
-                      <span className="text-xs text-gray-400 ml-1">(for reference)</span>
-                    )}
-                    <div className="group relative inline-block">
-                      <svg className="w-4 h-4 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                      </svg>
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 z-10">
-                        <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
-                          {deal.purchaseType === 'primary_residence'
-                            ? 'Cash-on-Cash is an investment metric. For primary residences, this is N/A since you\'re not earning rental income.'
-                            : 'Return on actual cash invested (down payment + closing costs + rehab). Formula: (Cash Flow Annual / All-In Cash) × 100. Higher is better.'}
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                  {/* Cash-on-Cash */}
+                  <div className="bg-green-50 border-2 border-green-200 p-4 rounded-lg">
+                    <div className="text-sm font-medium mb-1 flex items-center gap-1 text-gray-800">
+                      Cash-on-Cash Return
+                      <div className="group relative inline-block">
+                        <svg className="w-4 h-4 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 z-10">
+                          <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
+                            Return on actual cash invested (down payment + closing costs + rehab). Formula: (Cash Flow Annual / All-In Cash) × 100. Higher is better.
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                          </div>
                         </div>
                       </div>
                     </div>
+                    <div className="text-xl font-semibold text-green-700">{analysis.outputs.cashOnCash.toFixed(2)}%</div>
                   </div>
-                  <div className={`text-xl font-semibold ${deal.purchaseType === 'primary_residence' ? 'text-gray-500' : 'text-green-700'}`}>
-                    {analysis.outputs.cashOnCash.toFixed(2)}%
-                  </div>
-                </div>
 
-                {/* DSCR - highlighted for investment, de-emphasized for primary */}
-                <div className={`p-4 rounded-lg ${deal.purchaseType !== 'primary_residence' ? 'bg-gray-50' : 'bg-gray-100 opacity-75'}`}>
-                  <div className={`text-sm font-medium mb-1 flex items-center gap-1 ${deal.purchaseType === 'primary_residence' ? 'text-gray-500' : 'text-gray-800'}`}>
-                    DSCR
-                    {deal.purchaseType === 'primary_residence' && (
-                      <span className="text-xs text-gray-400 ml-1">(for reference)</span>
-                    )}
-                    <div className="group relative inline-block">
-                      <svg className="w-4 h-4 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                      </svg>
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 z-10">
-                        <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
-                          {deal.purchaseType === 'primary_residence'
-                            ? 'DSCR is a lender metric for investment loans. Primary residence loans use DTI (debt-to-income) instead.'
-                            : 'Debt Service Coverage Ratio: Property\'s ability to cover debt payments. Formula: NOI Annual / Annual Debt Service. Lenders typically require ≥ 1.25.'}
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                  {/* DSCR */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="text-sm font-medium mb-1 flex items-center gap-1 text-gray-800">
+                      DSCR
+                      <div className="group relative inline-block">
+                        <svg className="w-4 h-4 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 z-10">
+                          <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
+                            Debt Service Coverage Ratio: Property&apos;s ability to cover debt payments. Formula: NOI Annual / Annual Debt Service. Lenders typically require ≥ 1.25.
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                          </div>
                         </div>
                       </div>
                     </div>
+                    <div className="text-xl font-semibold text-gray-900">{analysis.outputs.dscr.toFixed(2)}</div>
                   </div>
-                  <div className={`text-xl font-semibold ${deal.purchaseType === 'primary_residence' ? 'text-gray-500' : 'text-gray-900'}`}>
-                    {analysis.outputs.dscr.toFixed(2)}
-                  </div>
-                </div>
 
-                {/* Break-Even Rent - hidden for primary residence, shown for investment */}
-                {deal.purchaseType !== 'primary_residence' && (
+                  {/* Break-Even Rent */}
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="text-sm text-gray-800 font-medium mb-1 flex items-center gap-1">
                       Break-Even Rent
@@ -1518,42 +1628,40 @@ export default function DealDetailPage() {
                     </div>
                     <div className="text-xl font-semibold text-gray-900">${analysis.outputs.breakEvenRentMonthly.toLocaleString()}</div>
                   </div>
-                )}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-800 font-medium mb-1 flex items-center gap-1">
-                    All-In Cash
-                    <div className="group relative inline-block">
-                      <svg className="w-4 h-4 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                      </svg>
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 z-10">
-                        <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
-                          Total cash required to close the deal: Down Payment + Closing Costs + Rehab. This is your total initial investment.
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="text-sm text-gray-800 font-medium mb-1 flex items-center gap-1">
+                      All-In Cash
+                      <div className="group relative inline-block">
+                        <svg className="w-4 h-4 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 z-10">
+                          <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
+                            Total cash required to close the deal: Down Payment + Closing Costs + Rehab. This is your total initial investment.
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                          </div>
                         </div>
                       </div>
                     </div>
+                    <div className="text-xl font-semibold text-gray-900">${analysis.outputs.allInCashRequired.toLocaleString()}</div>
                   </div>
-                  <div className="text-xl font-semibold text-gray-900">${analysis.outputs.allInCashRequired.toLocaleString()}</div>
                 </div>
-              </div>
+              )}
               
               {/* Analysis Summary */}
               <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Summary</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  {deal.purchaseType === 'primary_residence' ? (
+                  {deal.purchaseType === 'primary_residence' && primaryResidenceOutputs ? (
                     <>
-                      <span className="font-semibold">Your cost to own this home:</span> You&apos;ll need{' '}
-                      <span className="font-semibold">${analysis.outputs.allInCashRequired.toLocaleString()}</span> in cash to close 
-                      (down payment + closing costs + any rehab). Your monthly housing cost is{' '}
-                      <span className="font-semibold">${analysis.outputs.totalMonthlyPayment.toLocaleString()}</span>, 
-                      which comes to <span className="font-semibold">${Math.abs(analysis.outputs.cashFlowAnnual).toLocaleString()}</span>/year. 
-                      This includes principal, interest, taxes, insurance, HOA, and reserves for maintenance ({deal.maintenanceRate || 0}%) 
-                      and capital expenditures ({deal.capexRate || 0}%). 
-                      {analysis.outputs.capRate > 0 && (
-                        <> For reference, if you were to rent this property out, it would have a {analysis.outputs.capRate.toFixed(1)}% cap rate.</>
-                      )}
+                      <span className="font-semibold">Can you afford this home?</span> You&apos;ll need{' '}
+                      <span className="font-semibold">${Math.round(primaryResidenceOutputs.cashRequiredAtClose).toLocaleString()}</span> in cash to close.{' '}
+                      Your all-in monthly cost to live here is{' '}
+                      <span className="font-semibold">${Math.round(primaryResidenceOutputs.allInMonthlyCost).toLocaleString()}/month</span>{' '}
+                      (${Math.round(primaryResidenceOutputs.allInMonthlyCost * 12).toLocaleString()}/year).{' '}
+                      However, <span className="font-semibold">${Math.round(primaryResidenceOutputs.annualPrincipalPaydown / 12).toLocaleString()}/month</span>{' '}
+                      of that goes toward building equity, so your <span className="font-semibold">true cost of housing</span> is approximately{' '}
+                      <span className="font-semibold">${Math.round(primaryResidenceOutputs.annualNetCostOfOwnership / 12).toLocaleString()}/month</span>.
                     </>
                   ) : deal.purchaseType === 'house_hack' ? (
                     <>
@@ -1616,88 +1724,221 @@ export default function DealDetailPage() {
         {holdingPeriodAnalysis && (
           <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              {deal.holdingPeriodYears || 10}-Year Holding Period Analysis
+              {deal.purchaseType === 'primary_residence' 
+                ? `${deal.holdingPeriodYears || 10}-Year Ownership Analysis`
+                : `${deal.holdingPeriodYears || 10}-Year Holding Period Analysis`}
             </h2>
             
-            {/* Return Metrics Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
-                <div className="text-sm font-medium text-green-700 mb-1">Internal Rate of Return</div>
-                <div className={`text-2xl font-bold ${holdingPeriodAnalysis.irr >= 0 ? 'text-green-700' : 'text-red-600'}`}>
-                  {holdingPeriodAnalysis.irr.toFixed(1)}%
-                </div>
-                <div className="text-xs text-green-600 mt-1">Annualized return on investment</div>
-              </div>
-              
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
-                <div className="text-sm font-medium text-blue-700 mb-1">Equity Multiple</div>
-                <div className="text-2xl font-bold text-blue-700">
-                  {holdingPeriodAnalysis.equityMultiple.toFixed(2)}x
-                </div>
-                <div className="text-xs text-blue-600 mt-1">Total return / cash invested</div>
-              </div>
-              
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
-                <div className="text-sm font-medium text-purple-700 mb-1">Total Profit</div>
-                <div className={`text-2xl font-bold ${holdingPeriodAnalysis.exitScenario.totalProfit >= 0 ? 'text-purple-700' : 'text-red-600'}`}>
-                  ${Math.abs(holdingPeriodAnalysis.exitScenario.totalProfit).toLocaleString()}
-                </div>
-                <div className="text-xs text-purple-600 mt-1">Cash flow + sale proceeds - investment</div>
-              </div>
-              
-              <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-4 border border-amber-200">
-                <div className="text-sm font-medium text-amber-700 mb-1">Total ROI</div>
-                <div className={`text-2xl font-bold ${holdingPeriodAnalysis.exitScenario.totalROI >= 0 ? 'text-amber-700' : 'text-red-600'}`}>
-                  {holdingPeriodAnalysis.exitScenario.totalROI.toFixed(1)}%
-                </div>
-                <div className="text-xs text-amber-600 mt-1">Profit / initial investment</div>
-              </div>
-            </div>
+            {/* PRIMARY RESIDENCE: Time, flexibility, and risk focused metrics */}
+            {deal.purchaseType === 'primary_residence' && primaryResidenceHoldingPeriod ? (
+              <>
+                {/* Core Ownership Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  {/* Equity Accumulation */}
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                    <div className="text-sm font-semibold text-blue-700 mb-1">Total Equity Built</div>
+                    <div className="text-2xl font-bold text-blue-900">
+                      ${Math.round(primaryResidenceHoldingPeriod.totalEquityAccumulation).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-blue-600 mt-2 space-y-1">
+                      <div>Principal paydown: ${Math.round(primaryResidenceHoldingPeriod.equityFromPrincipalPaydown).toLocaleString()}</div>
+                      <div>Appreciation: ${Math.round(primaryResidenceHoldingPeriod.equityFromAppreciation).toLocaleString()}</div>
+                    </div>
+                  </div>
 
-            {/* Exit Scenario */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Exit Scenario (Year {deal.holdingPeriodYears || 10})</h3>
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">Sale Price:</span>
-                    <span className="font-semibold text-gray-900 ml-2">
-                      ${holdingPeriodAnalysis.exitScenario.salePrice.toLocaleString()}
-                    </span>
+                  {/* Net Housing Cost */}
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                    <div className="text-sm font-semibold text-purple-700 mb-1">Effective Monthly Cost</div>
+                    <div className="text-2xl font-bold text-purple-900">
+                      ${Math.round(primaryResidenceHoldingPeriod.netCostOfHousingMonthlyEquivalent).toLocaleString()}<span className="text-lg font-normal">/mo</span>
+                    </div>
+                    <div className="text-xs text-purple-600 mt-2">
+                      Total over {deal.holdingPeriodYears || 10} years: ${Math.round(primaryResidenceHoldingPeriod.netCostOfHousingTotal).toLocaleString()}
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Selling Costs:</span>
-                    <span className="font-semibold text-red-600 ml-2">
-                      -${holdingPeriodAnalysis.exitScenario.sellingCosts.toLocaleString()}
-                    </span>
+
+                  {/* Break-even vs Renting */}
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                    <div className="text-sm font-semibold text-green-700 mb-1">Break-Even vs Renting</div>
+                    <div className="text-2xl font-bold text-green-900">
+                      {primaryResidenceHoldingPeriod.breakEvenYearBuyVsRent 
+                        ? `Year ${primaryResidenceHoldingPeriod.breakEvenYearBuyVsRent}` 
+                        : 'N/A'}
+                    </div>
+                    <div className="text-xs text-green-600 mt-2">
+                      {primaryResidenceHoldingPeriod.breakEvenYearBuyVsRent 
+                        ? `Ownership beats renting after ${primaryResidenceHoldingPeriod.breakEvenYearBuyVsRent} year${primaryResidenceHoldingPeriod.breakEvenYearBuyVsRent > 1 ? 's' : ''}` 
+                        : 'Enter market rent to calculate'}
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Loan Payoff:</span>
-                    <span className="font-semibold text-red-600 ml-2">
-                      -${holdingPeriodAnalysis.exitScenario.loanPayoff.toLocaleString()}
-                    </span>
+                </div>
+
+                {/* Exit Flexibility - What if you need to sell? */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">What If You Need to Sell?</h3>
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      {primaryResidenceHoldingPeriod.exitScenarios.map((scenario) => (
+                        <div key={scenario.year} className="text-center p-3 bg-white rounded-lg border border-gray-100">
+                          <div className="text-xs text-gray-500 mb-1">After {scenario.year} Years</div>
+                          <div className={`text-lg font-bold ${scenario.netProceedsFromSale >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                            ${Math.round(scenario.netProceedsFromSale).toLocaleString()}
+                          </div>
+                          <div className="text-xs text-gray-500">net proceeds at sale</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Net Proceeds:</span>
-                    <span className="font-semibold text-green-700 ml-2">
-                      ${holdingPeriodAnalysis.exitScenario.netProceedsFromSale.toLocaleString()}
-                    </span>
+                </div>
+
+                {/* Downside Scenarios */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Sensitivity Analysis</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Flat Price Scenario */}
+                    <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                      <div className="text-sm font-semibold text-amber-800 mb-2">If Prices Stay Flat (0% growth)</div>
+                      <div className="text-sm text-amber-700 space-y-1">
+                        <div>Net proceeds at sale: <span className={`font-semibold ${primaryResidenceHoldingPeriod.flatPriceScenario.netProceedsAtSale >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                          ${Math.round(primaryResidenceHoldingPeriod.flatPriceScenario.netProceedsAtSale).toLocaleString()}
+                        </span></div>
+                        <div>Effective monthly cost: <span className="font-semibold">${Math.round(primaryResidenceHoldingPeriod.flatPriceScenario.effectiveMonthlyCost).toLocaleString()}/mo</span></div>
+                      </div>
+                    </div>
+
+                    {/* Negative Price Scenario */}
+                    <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+                      <div className="text-sm font-semibold text-red-800 mb-2">If Prices Drop 10%</div>
+                      <div className="text-sm text-red-700 space-y-1">
+                        <div>Net proceeds at sale: <span className={`font-semibold ${primaryResidenceHoldingPeriod.negativePriceScenario.netProceedsAtSale >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                          ${Math.round(primaryResidenceHoldingPeriod.negativePriceScenario.netProceedsAtSale).toLocaleString()}
+                        </span></div>
+                        <div>Effective monthly cost: <span className="font-semibold">${Math.round(primaryResidenceHoldingPeriod.negativePriceScenario.effectiveMonthlyCost).toLocaleString()}/mo</span></div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Cumulative Cash Flow:</span>
-                    <span className={`font-semibold ml-2 ${holdingPeriodAnalysis.exitScenario.cumulativeCashFlow >= 0 ? 'text-green-700' : 'text-red-600'}`}>
-                      ${holdingPeriodAnalysis.exitScenario.cumulativeCashFlow.toLocaleString()}
-                    </span>
+                </div>
+
+                {/* Advanced Investment Metrics - Hidden behind toggle */}
+                <div className="border-t border-gray-200 pt-4">
+                  <button
+                    onClick={() => setShowAdvancedMetrics(!showAdvancedMetrics)}
+                    className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                  >
+                    <svg className={`w-4 h-4 transition-transform ${showAdvancedMetrics ? 'rotate-90' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                    {showAdvancedMetrics ? 'Hide' : 'Show'} IRR and investment metrics
+                  </button>
+                  
+                  {showAdvancedMetrics && (
+                    <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 opacity-75">
+                      <div className="bg-gray-100 p-3 rounded-lg">
+                        <div className="text-xs text-gray-500 mb-1">IRR</div>
+                        <div className={`text-lg font-semibold ${holdingPeriodAnalysis.irr >= 0 ? 'text-gray-600' : 'text-red-600'}`}>{holdingPeriodAnalysis.irr.toFixed(1)}%</div>
+                      </div>
+                      <div className="bg-gray-100 p-3 rounded-lg">
+                        <div className="text-xs text-gray-500 mb-1">Equity Multiple</div>
+                        <div className="text-lg font-semibold text-gray-600">{holdingPeriodAnalysis.equityMultiple.toFixed(2)}x</div>
+                      </div>
+                      <div className="bg-gray-100 p-3 rounded-lg">
+                        <div className="text-xs text-gray-500 mb-1">Total ROI</div>
+                        <div className={`text-lg font-semibold ${holdingPeriodAnalysis.exitScenario.totalROI >= 0 ? 'text-gray-600' : 'text-red-600'}`}>{holdingPeriodAnalysis.exitScenario.totalROI.toFixed(1)}%</div>
+                      </div>
+                      <div className="bg-gray-100 p-3 rounded-lg">
+                        <div className="text-xs text-gray-500 mb-1">Net Proceeds</div>
+                        <div className="text-lg font-semibold text-gray-600">${holdingPeriodAnalysis.exitScenario.netProceedsFromSale.toLocaleString()}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              /* INVESTMENT PROPERTIES: Original IRR-focused metrics */
+              <>
+                {/* Return Metrics Summary */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                    <div className="text-sm font-medium text-green-700 mb-1">Internal Rate of Return</div>
+                    <div className={`text-2xl font-bold ${holdingPeriodAnalysis.irr >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                      {holdingPeriodAnalysis.irr.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-green-600 mt-1">Annualized return on investment</div>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Initial Investment:</span>
-                    <span className="font-semibold text-gray-900 ml-2">
-                      ${holdingPeriodAnalysis.exitScenario.initialInvestment.toLocaleString()}
-                    </span>
+                  
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                    <div className="text-sm font-medium text-blue-700 mb-1">Equity Multiple</div>
+                    <div className="text-2xl font-bold text-blue-700">
+                      {holdingPeriodAnalysis.equityMultiple.toFixed(2)}x
+                    </div>
+                    <div className="text-xs text-blue-600 mt-1">Total return / cash invested</div>
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                    <div className="text-sm font-medium text-purple-700 mb-1">Total Profit</div>
+                    <div className={`text-2xl font-bold ${holdingPeriodAnalysis.exitScenario.totalProfit >= 0 ? 'text-purple-700' : 'text-red-600'}`}>
+                      ${Math.abs(holdingPeriodAnalysis.exitScenario.totalProfit).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-purple-600 mt-1">Cash flow + sale proceeds - investment</div>
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-4 border border-amber-200">
+                    <div className="text-sm font-medium text-amber-700 mb-1">Total ROI</div>
+                    <div className={`text-2xl font-bold ${holdingPeriodAnalysis.exitScenario.totalROI >= 0 ? 'text-amber-700' : 'text-red-600'}`}>
+                      {holdingPeriodAnalysis.exitScenario.totalROI.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-amber-600 mt-1">Profit / initial investment</div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Exit Scenario - Investment properties only */}
+            {deal.purchaseType !== 'primary_residence' && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Exit Scenario (Year {deal.holdingPeriodYears || 10})</h3>
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Sale Price:</span>
+                      <span className="font-semibold text-gray-900 ml-2">
+                        ${holdingPeriodAnalysis.exitScenario.salePrice.toLocaleString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Selling Costs:</span>
+                      <span className="font-semibold text-red-600 ml-2">
+                        -${holdingPeriodAnalysis.exitScenario.sellingCosts.toLocaleString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Loan Payoff:</span>
+                      <span className="font-semibold text-red-600 ml-2">
+                        -${holdingPeriodAnalysis.exitScenario.loanPayoff.toLocaleString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Net Proceeds:</span>
+                      <span className="font-semibold text-green-700 ml-2">
+                        ${holdingPeriodAnalysis.exitScenario.netProceedsFromSale.toLocaleString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Cumulative Cash Flow:</span>
+                      <span className={`font-semibold ml-2 ${holdingPeriodAnalysis.exitScenario.cumulativeCashFlow >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                        ${holdingPeriodAnalysis.exitScenario.cumulativeCashFlow.toLocaleString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Initial Investment:</span>
+                      <span className="font-semibold text-gray-900 ml-2">
+                        ${holdingPeriodAnalysis.exitScenario.initialInvestment.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Equity Buildup Chart */}
             <div className="mb-6">
@@ -1741,116 +1982,121 @@ export default function DealDetailPage() {
               </div>
             </div>
 
-            {/* Cash Flow Schedule */}
-            <div>
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-semibold text-gray-900">Cash Flow Schedule</h3>
-                <button
-                  onClick={() => setShowCashFlowSchedule(!showCashFlowSchedule)}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  {showCashFlowSchedule ? 'Hide Details' : 'Show Details'}
-                </button>
-              </div>
-              
-              {showCashFlowSchedule && (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-gray-100 text-left">
-                        <th className="px-3 py-2 font-semibold text-gray-700">Year</th>
-                        <th className="px-3 py-2 font-semibold text-gray-700 text-right">Property Value</th>
-                        <th className="px-3 py-2 font-semibold text-gray-700 text-right">Rent (Annual)</th>
-                        <th className="px-3 py-2 font-semibold text-gray-700 text-right">NOI</th>
-                        <th className="px-3 py-2 font-semibold text-gray-700 text-right">Cash Flow</th>
-                        <th className="px-3 py-2 font-semibold text-gray-700 text-right">Cumulative CF</th>
-                        <th className="px-3 py-2 font-semibold text-gray-700 text-right">Loan Balance</th>
-                        <th className="px-3 py-2 font-semibold text-gray-700 text-right">Equity</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {holdingPeriodAnalysis.yearlyProjections.map((year) => (
-                        <tr key={year.year} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="px-3 py-2 font-medium text-gray-900">{year.year}</td>
-                          <td className="px-3 py-2 text-right text-gray-700">
-                            ${year.propertyValue.toLocaleString()}
-                          </td>
-                          <td className="px-3 py-2 text-right text-gray-700">
-                            ${year.rentAnnual.toLocaleString()}
-                          </td>
-                          <td className="px-3 py-2 text-right text-gray-700">
-                            ${year.noiAnnual.toLocaleString()}
-                          </td>
-                          <td className={`px-3 py-2 text-right font-medium ${year.cashFlowAnnual >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            ${year.cashFlowAnnual.toLocaleString()}
-                          </td>
-                          <td className={`px-3 py-2 text-right ${year.cumulativeCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            ${year.cumulativeCashFlow.toLocaleString()}
-                          </td>
-                          <td className="px-3 py-2 text-right text-gray-700">
-                            ${year.loanBalance.toLocaleString()}
-                          </td>
-                          <td className="px-3 py-2 text-right font-medium text-blue-600">
-                            ${year.equity.toLocaleString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            {/* Cash Flow Schedule - Investment properties only */}
+            {deal.purchaseType !== 'primary_residence' && (
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-semibold text-gray-900">Cash Flow Schedule</h3>
+                  <button
+                    onClick={() => setShowCashFlowSchedule(!showCashFlowSchedule)}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    {showCashFlowSchedule ? 'Hide Details' : 'Show Details'}
+                  </button>
                 </div>
-              )}
-              
-              {!showCashFlowSchedule && (
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Year 1 Cash Flow:</span>
-                      <span className={`font-semibold ml-2 ${holdingPeriodAnalysis.yearlyProjections[0].cashFlowAnnual >= 0 ? 'text-green-700' : 'text-red-600'}`}>
-                        ${holdingPeriodAnalysis.yearlyProjections[0].cashFlowAnnual.toLocaleString()}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Year {Math.ceil(holdingPeriodAnalysis.yearlyProjections.length / 2)} Cash Flow:</span>
-                      <span className={`font-semibold ml-2 ${holdingPeriodAnalysis.yearlyProjections[Math.ceil(holdingPeriodAnalysis.yearlyProjections.length / 2) - 1].cashFlowAnnual >= 0 ? 'text-green-700' : 'text-red-600'}`}>
-                        ${holdingPeriodAnalysis.yearlyProjections[Math.ceil(holdingPeriodAnalysis.yearlyProjections.length / 2) - 1].cashFlowAnnual.toLocaleString()}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Final Year Cash Flow:</span>
-                      <span className={`font-semibold ml-2 ${holdingPeriodAnalysis.yearlyProjections[holdingPeriodAnalysis.yearlyProjections.length - 1].cashFlowAnnual >= 0 ? 'text-green-700' : 'text-red-600'}`}>
-                        ${holdingPeriodAnalysis.yearlyProjections[holdingPeriodAnalysis.yearlyProjections.length - 1].cashFlowAnnual.toLocaleString()}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Final Equity:</span>
-                      <span className="font-semibold text-blue-700 ml-2">
-                        ${holdingPeriodAnalysis.yearlyProjections[holdingPeriodAnalysis.yearlyProjections.length - 1].equity.toLocaleString()}
-                      </span>
+                
+                {showCashFlowSchedule && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-100 text-left">
+                          <th className="px-3 py-2 font-semibold text-gray-700">Year</th>
+                          <th className="px-3 py-2 font-semibold text-gray-700 text-right">Property Value</th>
+                          <th className="px-3 py-2 font-semibold text-gray-700 text-right">Rent (Annual)</th>
+                          <th className="px-3 py-2 font-semibold text-gray-700 text-right">NOI</th>
+                          <th className="px-3 py-2 font-semibold text-gray-700 text-right">Cash Flow</th>
+                          <th className="px-3 py-2 font-semibold text-gray-700 text-right">Cumulative CF</th>
+                          <th className="px-3 py-2 font-semibold text-gray-700 text-right">Loan Balance</th>
+                          <th className="px-3 py-2 font-semibold text-gray-700 text-right">Equity</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {holdingPeriodAnalysis.yearlyProjections.map((year) => (
+                          <tr key={year.year} className="border-b border-gray-100 hover:bg-gray-50">
+                            <td className="px-3 py-2 font-medium text-gray-900">{year.year}</td>
+                            <td className="px-3 py-2 text-right text-gray-700">
+                              ${year.propertyValue.toLocaleString()}
+                            </td>
+                            <td className="px-3 py-2 text-right text-gray-700">
+                              ${year.rentAnnual.toLocaleString()}
+                            </td>
+                            <td className="px-3 py-2 text-right text-gray-700">
+                              ${year.noiAnnual.toLocaleString()}
+                            </td>
+                            <td className={`px-3 py-2 text-right font-medium ${year.cashFlowAnnual >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              ${year.cashFlowAnnual.toLocaleString()}
+                            </td>
+                            <td className={`px-3 py-2 text-right ${year.cumulativeCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              ${year.cumulativeCashFlow.toLocaleString()}
+                            </td>
+                            <td className="px-3 py-2 text-right text-gray-700">
+                              ${year.loanBalance.toLocaleString()}
+                            </td>
+                            <td className="px-3 py-2 text-right font-medium text-blue-600">
+                              ${year.equity.toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                
+                {!showCashFlowSchedule && (
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Year 1 Cash Flow:</span>
+                        <span className={`font-semibold ml-2 ${holdingPeriodAnalysis.yearlyProjections[0].cashFlowAnnual >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                          ${holdingPeriodAnalysis.yearlyProjections[0].cashFlowAnnual.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Year {Math.ceil(holdingPeriodAnalysis.yearlyProjections.length / 2)} Cash Flow:</span>
+                        <span className={`font-semibold ml-2 ${holdingPeriodAnalysis.yearlyProjections[Math.ceil(holdingPeriodAnalysis.yearlyProjections.length / 2) - 1].cashFlowAnnual >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                          ${holdingPeriodAnalysis.yearlyProjections[Math.ceil(holdingPeriodAnalysis.yearlyProjections.length / 2) - 1].cashFlowAnnual.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Final Year Cash Flow:</span>
+                        <span className={`font-semibold ml-2 ${holdingPeriodAnalysis.yearlyProjections[holdingPeriodAnalysis.yearlyProjections.length - 1].cashFlowAnnual >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                          ${holdingPeriodAnalysis.yearlyProjections[holdingPeriodAnalysis.yearlyProjections.length - 1].cashFlowAnnual.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Final Equity:</span>
+                        <span className="font-semibold text-blue-700 ml-2">
+                          ${holdingPeriodAnalysis.yearlyProjections[holdingPeriodAnalysis.yearlyProjections.length - 1].equity.toLocaleString()}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             {/* Holding Period Summary */}
             <div className="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
-              <h3 className="text-lg font-semibold text-indigo-900 mb-2">Holding Period Summary</h3>
+              <h3 className="text-lg font-semibold text-indigo-900 mb-2">
+                {deal.purchaseType === 'primary_residence' ? 'Ownership Summary' : 'Holding Period Summary'}
+              </h3>
               <p className="text-indigo-800 leading-relaxed">
-                {deal.purchaseType === 'primary_residence' ? (
+                {deal.purchaseType === 'primary_residence' && primaryResidenceHoldingPeriod ? (
                   <>
-                    Over <span className="font-semibold">{deal.holdingPeriodYears || 10} years</span>, this property is projected to appreciate 
-                    from <span className="font-semibold">${(deal.purchasePrice || 0).toLocaleString()}</span> to{' '}
-                    <span className="font-semibold">${holdingPeriodAnalysis.exitScenario.salePrice.toLocaleString()}</span>.{' '}
-                    Starting with <span className="font-semibold">${holdingPeriodAnalysis.exitScenario.initialInvestment.toLocaleString()}</span> invested 
-                    (down payment + closing costs), you would receive{' '}
-                    <span className="font-semibold">${holdingPeriodAnalysis.exitScenario.netProceedsFromSale.toLocaleString()}</span> net proceeds at sale 
-                    (after paying off the remaining mortgage of <span className="font-semibold">${holdingPeriodAnalysis.exitScenario.loanPayoff.toLocaleString()}</span> and 
-                    selling costs of <span className="font-semibold">${holdingPeriodAnalysis.exitScenario.sellingCosts.toLocaleString()}</span>).{' '}
-                    Your total equity gain would be{' '}
-                    <span className={`font-semibold ${holdingPeriodAnalysis.exitScenario.totalProfit >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                      ${holdingPeriodAnalysis.exitScenario.totalProfit.toLocaleString()}
+                    <span className="font-semibold">What does it cost to live here over {deal.holdingPeriodYears || 10} years?</span>{' '}
+                    Your effective monthly housing cost is approximately{' '}
+                    <span className="font-semibold">${Math.round(primaryResidenceHoldingPeriod.netCostOfHousingMonthlyEquivalent).toLocaleString()}/month</span>{' '}
+                    after accounting for equity building.{' '}
+                    Over this period, you&apos;ll build{' '}
+                    <span className="font-semibold">${Math.round(primaryResidenceHoldingPeriod.totalEquityAccumulation).toLocaleString()}</span>{' '}
+                    in equity (<span className="font-semibold">${Math.round(primaryResidenceHoldingPeriod.equityFromPrincipalPaydown).toLocaleString()}</span>{' '}
+                    from principal paydown, <span className="font-semibold">${Math.round(primaryResidenceHoldingPeriod.equityFromAppreciation).toLocaleString()}</span>{' '}
+                    from appreciation).{' '}
+                    If you sell at year {deal.holdingPeriodYears || 10}, you would walk away with approximately{' '}
+                    <span className={`font-semibold ${holdingPeriodAnalysis.exitScenario.netProceedsFromSale >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      ${Math.round(holdingPeriodAnalysis.exitScenario.netProceedsFromSale).toLocaleString()}
                     </span>{' '}
-                    (<span className="font-semibold">{holdingPeriodAnalysis.exitScenario.totalROI.toFixed(1)}%</span> return on your cash invested).
+                    after paying off the mortgage and selling costs.
                   </>
                 ) : (
                   <>

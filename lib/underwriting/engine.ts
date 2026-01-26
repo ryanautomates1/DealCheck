@@ -4,7 +4,9 @@ import {
   HoldingPeriodInputs,
   HoldingPeriodOutputs,
   YearlyProjection,
-  ExitScenario
+  ExitScenario,
+  PrimaryResidenceOutputs,
+  PrimaryResidenceHoldingPeriodOutputs
 } from '../types'
 
 /**
@@ -597,5 +599,176 @@ export function calculateHoldingPeriodAnalysis(inputs: HoldingPeriodInputs): Hol
     exitScenario,
     irr,
     equityMultiple,
+  }
+}
+
+// =============================================================================
+// PRIMARY RESIDENCE ANALYSIS FUNCTIONS
+// =============================================================================
+
+/**
+ * Calculate primary residence metrics - homeowner-centric view
+ * Focuses on cost of living rather than investment returns
+ */
+export function calculatePrimaryResidenceAnalysis(inputs: UnderwritingInputs): PrimaryResidenceOutputs {
+  const loanAmount = inputs.purchasePrice * (1 - inputs.downPaymentPct / 100)
+  
+  // Monthly breakdown
+  const mortgagePI = calculateMonthlyPI(loanAmount, inputs.interestRate, inputs.termYears)
+  const monthlyTaxes = inputs.taxesAnnual / 12
+  const monthlyInsurance = inputs.insuranceAnnual / 12
+  const monthlyHOA = inputs.hoaMonthly
+  const pmi = inputs.pmiEnabled ? (inputs.pmiMonthly || 0) : 0
+  
+  // Maintenance reserve based on property value (typical 1% annual = ~0.083%/month)
+  const monthlyMaintenanceReserve = inputs.purchasePrice * (inputs.maintenanceRate / 100 / 12) +
+                                     inputs.purchasePrice * (inputs.capexRate / 100 / 12)
+  
+  // All-in monthly cost (what you pay each month to live here)
+  const allInMonthlyCost = mortgagePI + pmi + monthlyTaxes + monthlyInsurance + 
+                           monthlyHOA + inputs.utilitiesMonthly + monthlyMaintenanceReserve
+  
+  // Cash required at close
+  const downPayment = inputs.purchasePrice * (inputs.downPaymentPct / 100)
+  const closingCosts = inputs.purchasePrice * (inputs.closingCostRate / 100)
+  const cashRequiredAtClose = downPayment + closingCosts + inputs.rehabCost
+  
+  // Annual view
+  const annualGrossCost = allInMonthlyCost * 12
+  
+  // First year principal paydown
+  const annualPrincipalPaydown = getPrincipalPaidInYear(loanAmount, inputs.interestRate, inputs.termYears, 1)
+  
+  // Net cost = what you "spend" after accounting for equity building
+  const annualNetCostOfOwnership = annualGrossCost - annualPrincipalPaydown
+  
+  return {
+    allInMonthlyCost,
+    mortgagePI,
+    monthlyTaxes,
+    monthlyInsurance,
+    monthlyHOA,
+    monthlyMaintenanceReserve,
+    cashRequiredAtClose,
+    annualGrossCost,
+    annualPrincipalPaydown,
+    annualNetCostOfOwnership,
+  }
+}
+
+/**
+ * Calculate primary residence holding period analysis
+ * Reframes around time, flexibility, and risk rather than IRR
+ */
+export function calculatePrimaryResidenceHoldingPeriod(
+  inputs: HoldingPeriodInputs,
+  marketRentMonthly: number = 0
+): PrimaryResidenceHoldingPeriodOutputs {
+  const { underwritingInputs, holdingPeriodYears, appreciationRate, sellingCostRate } = inputs
+  const loanAmount = underwritingInputs.purchasePrice * (1 - underwritingInputs.downPaymentPct / 100)
+  
+  // Calculate monthly cost for first year (approximation for break-even)
+  const primaryResidence = calculatePrimaryResidenceAnalysis(underwritingInputs)
+  
+  // Equity accumulation over the period
+  let totalPrincipalPaydown = 0
+  for (let year = 1; year <= holdingPeriodYears; year++) {
+    totalPrincipalPaydown += getPrincipalPaidInYear(loanAmount, underwritingInputs.interestRate, underwritingInputs.termYears, year)
+  }
+  
+  const endPropertyValue = underwritingInputs.purchasePrice * Math.pow(1 + appreciationRate / 100, holdingPeriodYears)
+  const totalAppreciation = endPropertyValue - underwritingInputs.purchasePrice
+  const totalEquityAccumulation = totalPrincipalPaydown + totalAppreciation + 
+    (underwritingInputs.purchasePrice * underwritingInputs.downPaymentPct / 100)
+  
+  // Net cost of housing over period (simplified - assumes constant costs)
+  const netCostOfHousingTotal = primaryResidence.annualNetCostOfOwnership * holdingPeriodYears
+  const netCostOfHousingMonthlyEquivalent = netCostOfHousingTotal / (holdingPeriodYears * 12)
+  
+  // Break-even year vs renting
+  let breakEvenYearBuyVsRent: number | null = null
+  if (marketRentMonthly > 0) {
+    // Find year where cumulative cost of ownership < cumulative rent
+    // accounting for equity buildup and appreciation
+    for (let year = 1; year <= Math.min(30, holdingPeriodYears + 10); year++) {
+      const cumulativeRent = marketRentMonthly * 12 * year
+      const cumulativeOwnershipCost = primaryResidence.annualGrossCost * year
+      const equityAtYear = (underwritingInputs.purchasePrice * underwritingInputs.downPaymentPct / 100)
+      let principalPaidToYear = 0
+      for (let y = 1; y <= year; y++) {
+        principalPaidToYear += getPrincipalPaidInYear(loanAmount, underwritingInputs.interestRate, underwritingInputs.termYears, y)
+      }
+      const appreciationAtYear = underwritingInputs.purchasePrice * (Math.pow(1 + appreciationRate / 100, year) - 1)
+      const totalEquityAtYear = equityAtYear + principalPaidToYear + appreciationAtYear
+      
+      // Net wealth from owning = equity - cumulative cost
+      // Net wealth from renting = investment of down payment - cumulative rent
+      // Assume renter invests down payment at modest return (3%)
+      const renterInvestmentGrowth = primaryResidence.cashRequiredAtClose * (Math.pow(1.03, year) - 1)
+      
+      const netWealthOwning = totalEquityAtYear - cumulativeOwnershipCost
+      const netWealthRenting = primaryResidence.cashRequiredAtClose + renterInvestmentGrowth - cumulativeRent
+      
+      if (netWealthOwning > netWealthRenting) {
+        breakEvenYearBuyVsRent = year
+        break
+      }
+    }
+  }
+  
+  // Exit scenarios at years 3, 5, 7
+  const exitScenarios = [3, 5, 7].filter(y => y <= holdingPeriodYears + 3).map(year => {
+    const propertyValueAtYear = underwritingInputs.purchasePrice * Math.pow(1 + appreciationRate / 100, year)
+    const loanBalanceAtYear = getLoanBalanceAtYear(loanAmount, underwritingInputs.interestRate, underwritingInputs.termYears, year)
+    const sellingCosts = propertyValueAtYear * (sellingCostRate / 100)
+    const netProceedsFromSale = propertyValueAtYear - sellingCosts - loanBalanceAtYear
+    const totalHousingCostToDate = primaryResidence.annualGrossCost * year
+    
+    // Compare to renting
+    const cumulativeRent = marketRentMonthly > 0 ? marketRentMonthly * 12 * year : 0
+    const renterInvestmentGrowth = primaryResidence.cashRequiredAtClose * (Math.pow(1.03, year) - 1)
+    const renterNetWealth = primaryResidence.cashRequiredAtClose + renterInvestmentGrowth - cumulativeRent
+    const ownerNetWealth = netProceedsFromSale - totalHousingCostToDate + primaryResidence.cashRequiredAtClose
+    
+    return {
+      year,
+      netProceedsFromSale,
+      totalHousingCostToDate,
+      netPositionVsRenting: ownerNetWealth - renterNetWealth,
+    }
+  })
+  
+  // Sensitivity analysis - flat price scenario (0% appreciation)
+  const flatPropertyValue = underwritingInputs.purchasePrice
+  const flatLoanBalance = getLoanBalanceAtYear(loanAmount, underwritingInputs.interestRate, underwritingInputs.termYears, holdingPeriodYears)
+  const flatSellingCosts = flatPropertyValue * (sellingCostRate / 100)
+  const flatNetProceeds = flatPropertyValue - flatSellingCosts - flatLoanBalance
+  const flatTotalCost = primaryResidence.annualGrossCost * holdingPeriodYears
+  const flatEffectiveMonthlyCost = (flatTotalCost - flatNetProceeds + primaryResidence.cashRequiredAtClose) / (holdingPeriodYears * 12)
+  
+  // Sensitivity analysis - negative price scenario (-10% from purchase)
+  const negativePropertyValue = underwritingInputs.purchasePrice * 0.9
+  const negativeLoanBalance = getLoanBalanceAtYear(loanAmount, underwritingInputs.interestRate, underwritingInputs.termYears, holdingPeriodYears)
+  const negativeSellingCosts = negativePropertyValue * (sellingCostRate / 100)
+  const negativeNetProceeds = negativePropertyValue - negativeSellingCosts - negativeLoanBalance
+  const negativeTotalCost = primaryResidence.annualGrossCost * holdingPeriodYears
+  const negativeEffectiveMonthlyCost = (negativeTotalCost - negativeNetProceeds + primaryResidence.cashRequiredAtClose) / (holdingPeriodYears * 12)
+  
+  return {
+    breakEvenYearBuyVsRent,
+    netCostOfHousingTotal,
+    netCostOfHousingMonthlyEquivalent,
+    equityFromPrincipalPaydown: totalPrincipalPaydown,
+    equityFromAppreciation: totalAppreciation,
+    totalEquityAccumulation,
+    exitScenarios,
+    flatPriceScenario: {
+      netProceedsAtSale: flatNetProceeds,
+      effectiveMonthlyCost: flatEffectiveMonthlyCost,
+    },
+    negativePriceScenario: {
+      netProceedsAtSale: negativeNetProceeds,
+      effectiveMonthlyCost: negativeEffectiveMonthlyCost,
+    },
   }
 }

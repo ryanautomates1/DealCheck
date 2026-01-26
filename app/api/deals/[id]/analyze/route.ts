@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUserId } from '@/lib/auth'
 import { dealRepository, analysisRepository } from '@/lib/repositories'
 import { analyzeDealSchema } from '@/lib/schemas'
-import { calculateUnderwriting, calculateHoldingPeriodAnalysis } from '@/lib/underwriting/engine'
-import { UnderwritingInputs, HoldingPeriodInputs, HoldingPeriodOutputs } from '@/lib/types'
+import { 
+  calculateUnderwriting, 
+  calculateHoldingPeriodAnalysis,
+  calculatePrimaryResidenceAnalysis,
+  calculatePrimaryResidenceHoldingPeriod
+} from '@/lib/underwriting/engine'
+import { 
+  UnderwritingInputs, 
+  HoldingPeriodInputs, 
+  HoldingPeriodOutputs,
+  PrimaryResidenceOutputs,
+  PrimaryResidenceHoldingPeriodOutputs
+} from '@/lib/types'
 
 // POST /api/deals/[id]/analyze
 export async function POST(
@@ -54,6 +65,15 @@ export async function POST(
     // Calculate holding period analysis for all property types
     let holdingPeriodAnalysis: HoldingPeriodOutputs | null = null
     
+    // Calculate primary residence specific outputs
+    let primaryResidenceOutputs: PrimaryResidenceOutputs | null = null
+    let primaryResidenceHoldingPeriod: PrimaryResidenceHoldingPeriodOutputs | null = null
+    const isPrimaryResidence = deal.purchaseType === 'primary_residence'
+    
+    if (isPrimaryResidence) {
+      primaryResidenceOutputs = calculatePrimaryResidenceAnalysis(inputs)
+    }
+    
     if (validated.holdingPeriodYears) {
       const holdingPeriodInputs: HoldingPeriodInputs = {
         underwritingInputs: inputs,
@@ -65,6 +85,13 @@ export async function POST(
       }
       
       holdingPeriodAnalysis = calculateHoldingPeriodAnalysis(holdingPeriodInputs)
+      
+      // Calculate primary residence holding period analysis
+      if (isPrimaryResidence) {
+        // Use market rent equivalent if provided, otherwise estimate from property value
+        const marketRentMonthly = deal.rentMonthly || (inputs.purchasePrice * 0.005) // ~0.5% of value as rough estimate
+        primaryResidenceHoldingPeriod = calculatePrimaryResidenceHoldingPeriod(holdingPeriodInputs, marketRentMonthly)
+      }
     }
     
     // Create analysis (include holding period outputs if calculated)
@@ -89,6 +116,8 @@ export async function POST(
     return NextResponse.json({ 
       analysis,
       holdingPeriodAnalysis,
+      primaryResidenceOutputs,
+      primaryResidenceHoldingPeriod,
     }, { status: 201 })
   } catch (error: any) {
     if (error.message === 'Unauthorized') {
