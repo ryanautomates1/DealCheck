@@ -3,7 +3,7 @@
  * Displays property data, assumptions inputs, and calculated metrics
  */
 
-import { extractZillowData, ExtractionResult } from './extractors'
+import { extractZillowData } from './extractors'
 import { calculateUnderwriting, calculatePrimaryResidenceAnalysis, calculateAllInCashRequired } from '../lib/engine'
 import { 
   UnderwritingInputs, 
@@ -968,19 +968,20 @@ function attachEventListeners(): void {
 // Refresh scraped data
 function refreshData(): void {
   const result = extractZillowData()
+  const fields = result.fields
   scrapedData = {
-    address: result.data.address,
-    city: result.data.city,
-    state: result.data.state,
-    zip: result.data.zip,
-    listPrice: result.data.listPrice,
-    beds: result.data.beds,
-    baths: result.data.baths,
-    sqft: result.data.sqft,
-    propertyType: result.data.propertyType,
-    yearBuilt: result.data.yearBuilt,
-    hoaMonthly: result.data.hoaMonthly,
-    taxesAnnual: result.data.taxesAnnual,
+    address: fields.address?.value as string | undefined,
+    city: fields.city?.value as string | undefined,
+    state: fields.state?.value as string | undefined,
+    zip: fields.zip?.value as string | undefined,
+    listPrice: fields.listPrice?.value as number | undefined,
+    beds: fields.beds?.value as number | undefined,
+    baths: fields.baths?.value as number | undefined,
+    sqft: fields.sqft?.value as number | undefined,
+    propertyType: fields.propertyType?.value as string | undefined,
+    yearBuilt: fields.yearBuilt?.value as number | undefined,
+    hoaMonthly: fields.hoaMonthly?.value as number | undefined,
+    taxesAnnual: fields.taxesAnnual?.value as number | undefined,
     zillowUrl: window.location.href,
   }
   updateSidebar()
