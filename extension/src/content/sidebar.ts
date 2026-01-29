@@ -820,8 +820,6 @@ async function handleSaveDeal(): Promise<void> {
   }
   
   try {
-    const apiUrl = 'https://getdealmetrics.com/api/import'
-    
     const payload = {
       zillowUrl: scrapedData.zillowUrl || window.location.href,
       extractedData: {
@@ -846,21 +844,18 @@ async function handleSaveDeal(): Promise<void> {
       extractorVersion: 'sidebar_v1',
     }
     
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`,
-      },
-      body: JSON.stringify(payload),
+    // Send to background script to avoid CORS issues
+    const response = await chrome.runtime.sendMessage({
+      action: 'saveDeal',
+      payload,
+      authToken,
     })
     
-    if (!response.ok) {
-      const data = await response.json()
-      throw new Error(data.error || 'Failed to save deal')
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to save deal')
     }
     
-    const data = await response.json()
+    const data = response.data
     
     // Show success message
     const content = document.querySelector('.dm-sidebar-content')
