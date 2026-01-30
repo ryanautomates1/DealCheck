@@ -4,7 +4,20 @@
  * - When the page has no session, it can request the extension's session and set it on the site.
  * - When the user signs in on the website, we store tokens in the extension.
  * - When the user signs out on the website, we clear the extension's stored tokens.
+ * - Sets a global so the website can hide the "Get the extension" CTA when installed.
  */
+
+declare global {
+  interface Window {
+    __DEALMETRICS_EXTENSION_INSTALLED__?: boolean
+  }
+}
+
+;(function () {
+  try {
+    window.__DEALMETRICS_EXTENSION_INSTALLED__ = true
+  } catch {}
+})()
 
 const ALLOWED_ORIGINS = [
   'https://getdealmetrics.com',

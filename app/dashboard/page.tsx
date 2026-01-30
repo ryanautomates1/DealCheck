@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Deal, ImportStatus, PurchaseType, Analysis } from '@/lib/types'
 import { useAuth } from '@/components/AuthProvider'
+import { AppHeader } from '@/components/AppHeader'
 
 const statusColors: Record<ImportStatus, string> = {
   success: 'bg-green-100 text-green-800',
@@ -67,6 +68,18 @@ function DashboardContent() {
   const [filterPurchaseType, setFilterPurchaseType] = useState<PurchaseType | 'all'>('all')
   const [filterImportStatus, setFilterImportStatus] = useState<ImportStatus | 'all'>('all')
   const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false)
+  const [extensionInstalled, setExtensionInstalled] = useState(false)
+
+  useEffect(() => {
+    const check = () => {
+      if (typeof window !== 'undefined' && (window as unknown as { __DEALMETRICS_EXTENSION_INSTALLED__?: boolean }).__DEALMETRICS_EXTENSION_INSTALLED__) {
+        setExtensionInstalled(true)
+      }
+    }
+    check()
+    const t = setTimeout(check, 400)
+    return () => clearTimeout(t)
+  }, [])
 
   useEffect(() => {
     if (searchParams.get('upgraded') === 'true') {
@@ -253,53 +266,7 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation Bar */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold text-gray-900">DealMetrics</h1>
-              {profile && (
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  profile.subscription_tier === 'pro' 
-                    ? 'bg-blue-100 text-blue-800' 
-                    : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {profile.subscription_tier === 'pro' ? 'Pro' : 'Free'}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-4">
-              {profile && profile.subscription_tier === 'free' && (
-                <div className="hidden sm:flex items-center gap-2 text-sm text-gray-600">
-                  <span>
-                    <strong>{2 - (profile.imports_this_month || 0)}</strong> imports remaining
-                  </span>
-                  <Link
-                    href="/pricing"
-                    className="text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    Upgrade
-                  </Link>
-                </div>
-              )}
-              {user && (
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-600 hidden sm:inline">
-                    {user.email}
-                  </span>
-                  <button
-                    onClick={signOut}
-                    className="text-sm text-gray-500 hover:text-gray-700"
-                  >
-                    Sign out
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Upgrade Success Banner */}
@@ -349,36 +316,38 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* Chrome Extension Download Card */}
-        <div className="mb-6 p-5 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl text-white">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-white/20 rounded-lg">
-                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+        {/* Chrome Extension Download Card - only show if extension is not installed */}
+        {!extensionInstalled && (
+          <div className="mb-6 p-5 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl text-white">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-white/20 rounded-lg">
+                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Get the DealMetrics Chrome Extension</h3>
+                  <p className="text-blue-100 text-sm mt-1">
+                    Import listings directly from real estate sites with one click. 
+                    {profile?.subscription_tier === 'free' ? ' Free users get 2 imports/month.' : ' Unlimited imports with Pro!'}
+                  </p>
+                </div>
+              </div>
+              <a
+                href="https://chrome.google.com/webstore/detail/dealmetrics/YOUR_EXTENSION_ID"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-5 py-2.5 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 transition-colors whitespace-nowrap"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0C8.21 0 4.831 1.757 2.632 4.501l3.953 6.848A5.454 5.454 0 0 1 12 6.545h10.691A12 12 0 0 0 12 0zM1.931 5.47A11.943 11.943 0 0 0 0 12c0 6.012 4.42 10.991 10.189 11.864l3.953-6.847a5.45 5.45 0 0 1-6.865-2.29L1.931 5.47zm13.713 7.254l3.954 6.848A11.955 11.955 0 0 0 24 12c0-.746-.068-1.477-.198-2.182H12a5.454 5.454 0 0 1 3.644 2.906zM12 8.009a3.99 3.99 0 1 0 0 7.982 3.99 3.99 0 0 0 0-7.982z"/>
                 </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Get the DealMetrics Chrome Extension</h3>
-                <p className="text-blue-100 text-sm mt-1">
-                  Import listings directly from real estate sites with one click. 
-                  {profile?.subscription_tier === 'free' ? ' Free users get 2 imports/month.' : ' Unlimited imports with Pro!'}
-                </p>
-              </div>
+                Download Free Extension
+              </a>
             </div>
-            <a
-              href="https://chrome.google.com/webstore/detail/dealmetrics/YOUR_EXTENSION_ID"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-5 py-2.5 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 transition-colors whitespace-nowrap"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0C8.21 0 4.831 1.757 2.632 4.501l3.953 6.848A5.454 5.454 0 0 1 12 6.545h10.691A12 12 0 0 0 12 0zM1.931 5.47A11.943 11.943 0 0 0 0 12c0 6.012 4.42 10.991 10.189 11.864l3.953-6.847a5.45 5.45 0 0 1-6.865-2.29L1.931 5.47zm13.713 7.254l3.954 6.848A11.955 11.955 0 0 0 24 12c0-.746-.068-1.477-.198-2.182H12a5.454 5.454 0 0 1 3.644 2.906zM12 8.009a3.99 3.99 0 1 0 0 7.982 3.99 3.99 0 0 0 0-7.982z"/>
-              </svg>
-              Download Free Extension
-            </a>
           </div>
-        </div>
+        )}
 
         <div className="mb-8">
           <p className="text-gray-600">Analyze your real estate deals</p>
@@ -522,11 +491,6 @@ function DashboardContent() {
                       <h2 className="text-xl font-semibold text-gray-900">
                         {deal.address || 'Unknown address'}
                       </h2>
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[deal.importStatus]}`}
-                      >
-                        {statusLabels[deal.importStatus]}
-                      </span>
                       {deal.purchaseType && (
                         <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
                           {purchaseTypeLabels[deal.purchaseType]}

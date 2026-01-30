@@ -3,21 +3,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Deal, Analysis, ImportStatus, HoldingPeriodOutputs, PrimaryResidenceOutputs, PrimaryResidenceHoldingPeriodOutputs } from '@/lib/types'
-
-const statusColors: Record<ImportStatus, string> = {
-  success: 'bg-green-100 text-green-800',
-  partial: 'bg-yellow-100 text-yellow-800',
-  fail: 'bg-red-100 text-red-800',
-  manual: 'bg-blue-100 text-blue-800',
-}
-
-const statusLabels: Record<ImportStatus, string> = {
-  success: 'Success',
-  partial: 'Partial',
-  fail: 'Failed',
-  manual: 'Manual',
-}
+import { Deal, Analysis, HoldingPeriodOutputs, PrimaryResidenceOutputs, PrimaryResidenceHoldingPeriodOutputs } from '@/lib/types'
+import { AppHeader } from '@/components/AppHeader'
 
 export default function DealDetailPage() {
   const router = useRouter()
@@ -313,20 +300,26 @@ export default function DealDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Loading deal...</p>
+      <div className="min-h-screen bg-gray-50">
+        <AppHeader />
+        <div className="flex items-center justify-center flex-1 py-24">
+          <p className="text-gray-500">Loading deal...</p>
+        </div>
       </div>
     )
   }
 
   if (!deal) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-500 mb-4">Deal not found</p>
-          <Link href="/dashboard" className="text-blue-600 hover:text-blue-700">
-            Back to Dashboard
-          </Link>
+      <div className="min-h-screen bg-gray-50">
+        <AppHeader />
+        <div className="flex items-center justify-center flex-1 py-24">
+          <div className="text-center">
+            <p className="text-gray-500 mb-4">Deal not found</p>
+            <Link href="/dashboard" className="text-blue-600 hover:text-blue-700">
+              Back to Dashboard
+            </Link>
+          </div>
         </div>
       </div>
     )
@@ -336,6 +329,7 @@ export default function DealDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <AppHeader />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <Link href="/dashboard" className="text-blue-600 hover:text-blue-700 font-medium mb-4 inline-block">
@@ -515,12 +509,6 @@ export default function DealDetailPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Import Status</label>
-              <span className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${statusColors[deal.importStatus]}`}>
-                {statusLabels[deal.importStatus]}
-              </span>
-            </div>
           </div>
         </div>
 
