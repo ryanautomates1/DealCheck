@@ -14,11 +14,12 @@ export default function ExtensionLoginPage() {
     setError(null)
     setLoading(true)
 
-    // Add timeout to prevent infinite loading
+    // Timeout allows for slow Supabase responses (cold start, region latency)
+    const timeoutMs = 45000 // 45 seconds
     const timeoutId = setTimeout(() => {
       setLoading(false)
-      setError('Connection timed out. Please check your internet connection and try again.')
-    }, 15000) // 15 second timeout
+      setError('Sign-in is taking longer than usual. Please try again — the auth service may be temporarily slow.')
+    }, timeoutMs)
 
     try {
       console.log('[ExtensionAuth] Creating Supabase client...')
@@ -118,6 +119,11 @@ export default function ExtensionLoginPage() {
             >
               {loading ? 'Connecting...' : 'Connect Extension'}
             </button>
+            {loading && (
+              <p className="mt-2 text-center text-sm text-gray-500">
+                This may take 10–30 seconds. Please wait.
+              </p>
+            )}
           </form>
 
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
