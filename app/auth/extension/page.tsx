@@ -14,29 +14,47 @@ export default function ExtensionLoginPage() {
     setError(null)
     setLoading(true)
 
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      setLoading(false)
+      setError('Connection timed out. Please check your internet connection and try again.')
+    }, 15000) // 15 second timeout
+
     try {
+      console.log('[ExtensionAuth] Creating Supabase client...')
       const supabase = createClient()
+      
+      console.log('[ExtensionAuth] Attempting sign in...')
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
+      
+      clearTimeout(timeoutId)
+      console.log('[ExtensionAuth] Sign in result:', { hasData: !!data, hasError: !!error })
 
       if (error) {
+        console.error('[ExtensionAuth] Auth error:', error)
         setError(error.message)
+        setLoading(false)
         return
       }
 
       if (!data?.session) {
+        console.error('[ExtensionAuth] No session returned')
         setError('Login failed. Please check your credentials and try again.')
+        setLoading(false)
         return
       }
 
+      console.log('[ExtensionAuth] Success, redirecting...')
       // Redirect to success page with the access token
       const successUrl = `/auth/extension/success?token=${data.session.access_token}&email=${encodeURIComponent(email)}`
       window.location.href = successUrl
     } catch (err: any) {
+      clearTimeout(timeoutId)
+      console.error('[ExtensionAuth] Caught error:', err)
       setError(err.message || 'An error occurred. Please try again.')
-    } finally {
       setLoading(false)
     }
   }
