@@ -1,6 +1,6 @@
 export type ImportStatus = 'success' | 'partial' | 'fail' | 'manual'
 export type FieldSource = 'imported' | 'assumed' | 'missing'
-export type ExtractorVersion = 'structured_v1' | 'semantic_v1' | 'regex_v1'
+export type ExtractorVersion = 'structured_v1' | 'semantic_v1' | 'regex_v1' | 'sidebar_v1'
 export type PurchaseType = 'primary_residence' | 'investment_property' | 'house_hack' | 'vacation_home' | 'other'
 
 export interface Deal {
