@@ -29,6 +29,14 @@
       ],
       "js": ["auth.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost:3000/*",
+        "https://getdealmetrics.com/*"
+      ],
+      "js": ["website-auth.js"],
+      "run_at": "document_idle"
     }
   ],
   "background": {

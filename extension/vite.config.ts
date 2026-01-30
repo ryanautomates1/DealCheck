@@ -10,12 +10,14 @@ export default defineConfig({
         popup: resolve(__dirname, 'src/popup/popup.html'),
         content: resolve(__dirname, 'src/content/content.ts'),
         auth: resolve(__dirname, 'src/content/auth.ts'),
+        'website-auth': resolve(__dirname, 'src/content/website-auth-sync.ts'),
         background: resolve(__dirname, 'src/background/background.ts'),
       },
       output: {
         entryFileNames: (chunkInfo) => {
           if (chunkInfo.name === 'content') return 'content.js'
           if (chunkInfo.name === 'auth') return 'auth.js'
+          if (chunkInfo.name === 'website-auth') return 'website-auth.js'
           if (chunkInfo.name === 'background') return 'background.js'
           if (chunkInfo.name === 'popup') return 'assets/popup.js'
           return 'assets/[name].js'
