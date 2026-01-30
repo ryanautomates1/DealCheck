@@ -896,19 +896,23 @@ async function handleSaveDeal(): Promise<void> {
     
     const dealId = getDealIdFromSaveResponse(response)
     if (!dealId) {
-      console.error('[DealMetrics] Unexpected save response shape:', response)
-      throw new Error('Save succeeded but no deal ID returned. Check console for response.')
+      console.warn('[DealMetrics] Save succeeded but dealId missing from response shape:', response)
     }
-    
-    // Show success message
-    const content = document.querySelector('.dm-sidebar-content')
-    if (content) {
-      const successMsg = document.createElement('div')
-      successMsg.className = 'dm-success-msg'
-      successMsg.innerHTML = `
-        Deal saved! <a href="https://getdealmetrics.com/deals/${dealId}" target="_blank">View in Dashboard</a>
-      `
-      content.insertBefore(successMsg, content.firstChild)
+
+    // Show success message (never read .id here; dealId may be null)
+    try {
+      const content = document.querySelector('.dm-sidebar-content')
+      if (content) {
+        const successMsg = document.createElement('div')
+        successMsg.className = 'dm-success-msg'
+        const link = dealId
+          ? `Deal saved! <a href="https://getdealmetrics.com/deals/${dealId}" target="_blank">View in Dashboard</a>`
+          : 'Deal saved! <a href="https://getdealmetrics.com/dashboard" target="_blank">View in Dashboard</a>'
+        successMsg.innerHTML = link
+        content.insertBefore(successMsg, content.firstChild)
+      }
+    } catch (e) {
+      console.error('[DealMetrics] Error showing success message:', e)
     }
     
     if (saveBtn) {

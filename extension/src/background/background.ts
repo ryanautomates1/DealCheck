@@ -18,7 +18,10 @@ chrome.action.onClicked.addListener(() => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'saveDeal') {
     handleSaveDeal(request.payload, request.authToken)
-      .then(result => sendResponse({ success: true, data: result }))
+      .then(result => {
+        const dealId = result?.dealId ?? null
+        sendResponse({ success: true, data: result, dealId: dealId ?? undefined })
+      })
       .catch(error => sendResponse({ success: false, error: error.message }))
     return true
   }

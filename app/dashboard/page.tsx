@@ -85,8 +85,11 @@ function DashboardContent() {
     try {
       const res = await fetch('/api/deals')
       const data = await res.json()
-      const dealsData: DealWithAnalysis[] = data.deals || []
-      
+      const rawDeals: unknown[] = data.deals || []
+      const dealsData: DealWithAnalysis[] = rawDeals.filter(
+        (d): d is DealWithAnalysis => d != null && typeof (d as Deal)?.id === 'string'
+      )
+
       // Fetch latest analysis for each deal
       const dealsWithAnalyses = await Promise.all(
         dealsData.map(async (deal) => {
