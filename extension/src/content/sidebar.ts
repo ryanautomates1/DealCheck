@@ -324,50 +324,15 @@ function createSidebarHTML(): string {
         `}
       </div>
       
-      <!-- Premium Metrics (LOCKED) -->
-      <div class="dm-section dm-metrics dm-premium ${isLoggedIn ? '' : 'dm-locked'}">
-        <div class="dm-section-header">
-          <span>Advanced Analysis</span>
-          ${!isLoggedIn ? '<span class="dm-badge dm-badge-premium">PRO</span>' : ''}
-        </div>
-        
-        ${isLoggedIn ? `
-        <div class="dm-metric-row">
-          <span class="dm-metric-label">Cap Rate</span>
-          <span class="dm-metric-value">${formatPercent(outputs.capRate)}</span>
-        </div>
-        <div class="dm-metric-row">
-          <span class="dm-metric-label">NOI (Annual)</span>
-          <span class="dm-metric-value">${formatCurrency(outputs.noiAnnual)}</span>
-        </div>
-        <div class="dm-metric-row">
-          <span class="dm-metric-label">DSCR</span>
-          <span class="dm-metric-value">${outputs.dscr.toFixed(2)}x</span>
-        </div>
-        <div class="dm-metric-row">
-          <span class="dm-metric-label">Break-Even Rent</span>
-          <span class="dm-metric-value">${formatCurrency(outputs.breakEvenRentMonthly)}</span>
-        </div>
-        ` : `
-        <div class="dm-lock-overlay">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-          <span>Cap Rate, NOI, DSCR, IRR...</span>
-          <button class="dm-btn dm-btn-primary dm-btn-small" id="dm-sign-in">Sign in to unlock</button>
-        </div>
-        `}
-      </div>
-      
-      <!-- Holding Period Assumptions (in Advanced area) -->
+      <!-- Holding Period Analysis (website-style: assumptions + metrics + exit scenario) -->
       <div class="dm-section dm-holding-period">
         <div class="dm-section-header">
-          <span>Holding Period</span>
-          <button class="dm-toggle-advanced" id="dm-toggle-holding">Assumptions</button>
+          <span>${currentAssumptions.holdingPeriodYears}-Year ${isPrimaryResidence ? 'Ownership' : 'Holding Period'} Analysis</span>
         </div>
         
-        <div class="dm-holding-inputs" id="dm-holding-inputs" style="display: none;">
+        <p class="dm-holding-desc">Configure assumptions for multi-year projections.</p>
+        
+        <div class="dm-holding-inputs" id="dm-holding-inputs">
           <div class="dm-input-row">
             <label>Hold (years)</label>
             <div class="dm-input-group">
@@ -406,25 +371,121 @@ function createSidebarHTML(): string {
         </div>
         
         ${holdingPeriodOutputs ? `
-        <div class="dm-metrics dm-holding-metrics">
-          <div class="dm-metric-row dm-metric-highlight">
-            <span class="dm-metric-label">IRR</span>
-            <span class="dm-metric-value ${holdingPeriodOutputs.irr >= 0 ? 'dm-positive' : 'dm-negative'}">${formatPercent(holdingPeriodOutputs.irr)}</span>
+        <div class="dm-holding-cards">
+          <div class="dm-holding-card dm-card-irr">
+            <div class="dm-holding-card-label">IRR</div>
+            <div class="dm-holding-card-value ${holdingPeriodOutputs.irr >= 0 ? 'dm-positive' : 'dm-negative'}">${formatPercent(holdingPeriodOutputs.irr)}</div>
+            <div class="dm-holding-card-hint">Annualized return</div>
           </div>
-          <div class="dm-metric-row">
-            <span class="dm-metric-label">Equity Multiple</span>
-            <span class="dm-metric-value">${holdingPeriodOutputs.equityMultiple.toFixed(2)}x</span>
+          <div class="dm-holding-card dm-card-em">
+            <div class="dm-holding-card-label">Equity Multiple</div>
+            <div class="dm-holding-card-value">${holdingPeriodOutputs.equityMultiple.toFixed(2)}x</div>
+            <div class="dm-holding-card-hint">Total return / invested</div>
           </div>
-          <div class="dm-metric-row">
-            <span class="dm-metric-label">Total Profit</span>
-            <span class="dm-metric-value ${holdingPeriodOutputs.exitScenario.totalProfit >= 0 ? 'dm-positive' : 'dm-negative'}">${formatCurrency(holdingPeriodOutputs.exitScenario.totalProfit)}</span>
+          <div class="dm-holding-card dm-card-profit">
+            <div class="dm-holding-card-label">Total Profit</div>
+            <div class="dm-holding-card-value ${holdingPeriodOutputs.exitScenario.totalProfit >= 0 ? 'dm-positive' : 'dm-negative'}">${formatCurrency(holdingPeriodOutputs.exitScenario.totalProfit)}</div>
+            <div class="dm-holding-card-hint">Cash flow + sale - investment</div>
           </div>
-          <div class="dm-metric-row">
-            <span class="dm-metric-label">Total ROI</span>
-            <span class="dm-metric-value">${formatPercent(holdingPeriodOutputs.exitScenario.totalROI)}</span>
+          <div class="dm-holding-card dm-card-roi">
+            <div class="dm-holding-card-label">Total ROI</div>
+            <div class="dm-holding-card-value ${holdingPeriodOutputs.exitScenario.totalROI >= 0 ? 'dm-positive' : 'dm-negative'}">${formatPercent(holdingPeriodOutputs.exitScenario.totalROI)}</div>
+            <div class="dm-holding-card-hint">Profit / initial investment</div>
+          </div>
+        </div>
+        
+        <div class="dm-exit-scenario">
+          <div class="dm-exit-title">Exit Scenario (Year ${currentAssumptions.holdingPeriodYears})</div>
+          <div class="dm-exit-rows">
+            <div class="dm-exit-row">
+              <span class="dm-exit-label">Sale Price</span>
+              <span class="dm-exit-value">${formatCurrency(holdingPeriodOutputs.exitScenario.salePrice)}</span>
+            </div>
+            <div class="dm-exit-row">
+              <span class="dm-exit-label">Selling Costs</span>
+              <span class="dm-exit-value dm-negative">-${formatCurrency(holdingPeriodOutputs.exitScenario.sellingCosts)}</span>
+            </div>
+            <div class="dm-exit-row">
+              <span class="dm-exit-label">Loan Payoff</span>
+              <span class="dm-exit-value dm-negative">-${formatCurrency(holdingPeriodOutputs.exitScenario.loanPayoff)}</span>
+            </div>
+            <div class="dm-exit-row dm-exit-row-highlight">
+              <span class="dm-exit-label">Net Proceeds</span>
+              <span class="dm-exit-value dm-positive">${formatCurrency(holdingPeriodOutputs.exitScenario.netProceedsFromSale)}</span>
+            </div>
+            <div class="dm-exit-row">
+              <span class="dm-exit-label">Cumulative Cash Flow</span>
+              <span class="dm-exit-value ${holdingPeriodOutputs.exitScenario.cumulativeCashFlow >= 0 ? 'dm-positive' : 'dm-negative'}">${formatCurrency(holdingPeriodOutputs.exitScenario.cumulativeCashFlow)}</span>
+            </div>
+            <div class="dm-exit-row">
+              <span class="dm-exit-label">Initial Investment</span>
+              <span class="dm-exit-value">${formatCurrency(holdingPeriodOutputs.exitScenario.initialInvestment)}</span>
+            </div>
+          </div>
+        </div>
+        
+        ${holdingPeriodOutputs.yearlyProjections.length > 0 ? `
+        <div class="dm-yearly-summary">
+          <div class="dm-yearly-title">Projection Snapshot</div>
+          <div class="dm-yearly-rows">
+            <div class="dm-yearly-row">
+              <span class="dm-yearly-label">Year 1 Cash Flow</span>
+              <span class="dm-yearly-value ${holdingPeriodOutputs.yearlyProjections[0].cashFlowAnnual >= 0 ? 'dm-positive' : 'dm-negative'}">${formatCurrency(holdingPeriodOutputs.yearlyProjections[0].cashFlowAnnual)}</span>
+            </div>
+            ${currentAssumptions.holdingPeriodYears >= 3 && holdingPeriodOutputs.yearlyProjections.length >= Math.ceil(currentAssumptions.holdingPeriodYears / 2) ? `
+            <div class="dm-yearly-row">
+              <span class="dm-yearly-label">Year ${Math.ceil(currentAssumptions.holdingPeriodYears / 2)} Cash Flow</span>
+              <span class="dm-yearly-value ${holdingPeriodOutputs.yearlyProjections[Math.ceil(currentAssumptions.holdingPeriodYears / 2) - 1].cashFlowAnnual >= 0 ? 'dm-positive' : 'dm-negative'}">${formatCurrency(holdingPeriodOutputs.yearlyProjections[Math.ceil(currentAssumptions.holdingPeriodYears / 2) - 1].cashFlowAnnual)}</span>
+            </div>
+            ` : ''}
+            <div class="dm-yearly-row">
+              <span class="dm-yearly-label">Year ${currentAssumptions.holdingPeriodYears} Cash Flow</span>
+              <span class="dm-yearly-value ${holdingPeriodOutputs.yearlyProjections[holdingPeriodOutputs.yearlyProjections.length - 1].cashFlowAnnual >= 0 ? 'dm-positive' : 'dm-negative'}">${formatCurrency(holdingPeriodOutputs.yearlyProjections[holdingPeriodOutputs.yearlyProjections.length - 1].cashFlowAnnual)}</span>
+            </div>
+            <div class="dm-yearly-row">
+              <span class="dm-yearly-label">End Equity</span>
+              <span class="dm-yearly-value">${formatCurrency(holdingPeriodOutputs.yearlyProjections[holdingPeriodOutputs.yearlyProjections.length - 1].equity)}</span>
+            </div>
           </div>
         </div>
         ` : ''}
+        ` : ''}
+      </div>
+      
+      <!-- Premium Metrics (LOCKED) -->
+      <div class="dm-section dm-metrics dm-premium ${isLoggedIn ? '' : 'dm-locked'}">
+        <div class="dm-section-header">
+          <span>Advanced Analysis</span>
+          ${!isLoggedIn ? '<span class="dm-badge dm-badge-premium">PRO</span>' : ''}
+        </div>
+        
+        ${isLoggedIn ? `
+        <div class="dm-metric-row">
+          <span class="dm-metric-label">Cap Rate</span>
+          <span class="dm-metric-value">${formatPercent(outputs.capRate)}</span>
+        </div>
+        <div class="dm-metric-row">
+          <span class="dm-metric-label">NOI (Annual)</span>
+          <span class="dm-metric-value">${formatCurrency(outputs.noiAnnual)}</span>
+        </div>
+        <div class="dm-metric-row">
+          <span class="dm-metric-label">DSCR</span>
+          <span class="dm-metric-value">${outputs.dscr.toFixed(2)}x</span>
+        </div>
+        <div class="dm-metric-row">
+          <span class="dm-metric-label">Break-Even Rent</span>
+          <span class="dm-metric-value">${formatCurrency(outputs.breakEvenRentMonthly)}</span>
+        </div>
+        ` : `
+        <div class="dm-lock-overlay">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <span>Cap Rate, NOI, DSCR, IRR...</span>
+          <button class="dm-btn dm-btn-primary dm-btn-small" id="dm-sign-in">Sign in to unlock</button>
+        </div>
+        `}
       </div>
     </div>
     
@@ -647,14 +708,135 @@ function createSidebarStyles(): string {
       color: #3b82f6;
     }
     
-    .dm-holding-inputs {
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid #e5e7eb;
+    .dm-holding-desc {
+      font-size: 12px;
+      color: #6b7280;
+      margin: 0 0 12px 0;
     }
     
-    .dm-holding-metrics {
-      margin-top: 12px;
+    .dm-holding-inputs {
+      margin-bottom: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 12px;
+    }
+    
+    .dm-holding-inputs .dm-input-row {
+      margin-bottom: 0;
+    }
+    
+    .dm-holding-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    
+    .dm-holding-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    
+    .dm-holding-card-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin-bottom: 2px;
+    }
+    
+    .dm-holding-card-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    
+    .dm-holding-card-hint {
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+    
+    .dm-exit-scenario {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+    
+    .dm-exit-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 8px;
+    }
+    
+    .dm-exit-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .dm-exit-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+    
+    .dm-exit-row-highlight {
+      border-top: 1px solid #cbd5e1;
+      margin-top: 4px;
+      padding-top: 6px;
+      font-weight: 600;
+    }
+    
+    .dm-exit-label {
+      color: #64748b;
+    }
+    
+    .dm-exit-value {
+      font-weight: 600;
+      color: #1e293b;
+    }
+    
+    .dm-yearly-summary {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    
+    .dm-yearly-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+    
+    .dm-yearly-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    
+    .dm-yearly-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+    
+    .dm-yearly-label {
+      color: #64748b;
+    }
+    
+    .dm-yearly-value {
+      font-weight: 500;
+      color: #1e293b;
     }
     
     .dm-advanced-inputs {
@@ -1131,14 +1313,6 @@ function attachEventListeners(): void {
     const advanced = document.getElementById('dm-advanced-inputs')
     if (advanced) {
       advanced.style.display = advanced.style.display === 'none' ? 'block' : 'none'
-    }
-  })
-  
-  // Toggle holding period assumptions
-  document.getElementById('dm-toggle-holding')?.addEventListener('click', () => {
-    const holding = document.getElementById('dm-holding-inputs')
-    if (holding) {
-      holding.style.display = holding.style.display === 'none' ? 'block' : 'none'
     }
   })
   
