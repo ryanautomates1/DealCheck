@@ -250,7 +250,10 @@ function createSidebarHTML(): string {
         </div>
         ` : ''}
         <div class="dm-metric-row">
-          <span class="dm-metric-label">Property Taxes</span>
+          <span class="dm-metric-label">
+            Property Taxes
+            <span class="dm-tax-source">${scrapedData.taxSource === 'actual' && scrapedData.taxYear ? `(${scrapedData.taxYear})` : '(est.)'}</span>
+          </span>
           <span class="dm-metric-value">${formatCurrency(monthlyTaxes)}</span>
         </div>
         <div class="dm-metric-row">
@@ -579,6 +582,13 @@ function createSidebarStyles(): string {
     .dm-metric-label {
       font-size: 13px;
       color: #6b7280;
+    }
+    
+    .dm-tax-source {
+      font-size: 10px;
+      color: #9ca3af;
+      font-weight: 400;
+      margin-left: 4px;
     }
     
     .dm-metric-value {
@@ -964,6 +974,12 @@ function attachEventListeners(): void {
 function refreshData(): void {
   const result = extractZillowData()
   const fields = result.fields
+  
+  // Determine if taxes are from actual history or estimated
+  const taxSource = fields.taxesAnnual?.source
+  const isActualTax = taxSource?.startsWith('tax-history')
+  const taxYear = fields.taxYear?.value as number | undefined
+  
   scrapedData = {
     address: fields.address?.value as string | undefined,
     city: fields.city?.value as string | undefined,
@@ -977,6 +993,8 @@ function refreshData(): void {
     yearBuilt: fields.yearBuilt?.value as number | undefined,
     hoaMonthly: fields.hoaMonthly?.value as number | undefined,
     taxesAnnual: fields.taxesAnnual?.value as number | undefined,
+    taxYear: taxYear,
+    taxSource: isActualTax ? 'actual' : 'estimated',
     zillowUrl: window.location.href,
   }
   updateSidebar()

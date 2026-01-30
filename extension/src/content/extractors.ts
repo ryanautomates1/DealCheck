@@ -80,6 +80,130 @@ export function extractFromStructuredData(): Record<string, ExtractedField> {
 }
 
 /**
+ * Extract property taxes from Public Tax History table
+ * Returns the most recent year's tax amount with high confidence
+ */
+export function extractFromTaxHistory(): Record<string, ExtractedField> {
+  const fields: Record<string, ExtractedField> = {}
+  
+  try {
+    // Look for the Public Tax History section
+    // Try multiple selectors to find the tax history table
+    const taxHistorySelectors = [
+      '[data-testid="tax-history"]',
+      '[data-testid="public-tax-history"]',
+      'section:has(h2:contains("tax"))',
+      'div:has(h3:contains("tax"))',
+    ]
+    
+    // First, try to find by heading text
+    const headings = document.querySelectorAll('h2, h3, h4, h5, h6, span, div')
+    let taxSection: Element | null = null
+    
+    for (const heading of headings) {
+      const text = heading.textContent?.toLowerCase() || ''
+      if (text.includes('public tax history') || text.includes('tax history')) {
+        // Found the heading, look for the table nearby
+        taxSection = heading.closest('section') || heading.closest('div[class*="tax"]') || heading.parentElement
+        break
+      }
+    }
+    
+    if (!taxSection) {
+      // Try to find a table with year and tax columns
+      const tables = document.querySelectorAll('table')
+      for (const table of tables) {
+        const headerText = table.textContent?.toLowerCase() || ''
+        if (headerText.includes('property tax') && headerText.includes('year')) {
+          taxSection = table.parentElement
+          break
+        }
+      }
+    }
+    
+    if (taxSection) {
+      // Look for rows with year and tax amount
+      // Pattern: Year in first column, dollar amount in second column
+      const rows = taxSection.querySelectorAll('tr, [role="row"], div[class*="row"]')
+      
+      let mostRecentYear = 0
+      let mostRecentTax = 0
+      
+      for (const row of rows) {
+        const rowText = row.textContent || ''
+        
+        // Match patterns like "2025 $9,843" or similar
+        const yearMatch = rowText.match(/\b(20\d{2})\b/)
+        const taxMatch = rowText.match(/\$\s*([\d,]+)/)
+        
+        if (yearMatch && taxMatch) {
+          const year = parseInt(yearMatch[1], 10)
+          const tax = parseInt(taxMatch[1].replace(/,/g, ''), 10)
+          
+          // Validate reasonable tax amount
+          if (tax >= 100 && tax <= 500000 && year > mostRecentYear) {
+            mostRecentYear = year
+            mostRecentTax = tax
+          }
+        }
+      }
+      
+      if (mostRecentTax > 0 && mostRecentYear > 0) {
+        fields.taxesAnnual = { 
+          value: mostRecentTax, 
+          confidence: 0.95, 
+          source: `tax-history-${mostRecentYear}` 
+        }
+        // Store the year separately for display purposes
+        fields.taxYear = {
+          value: mostRecentYear,
+          confidence: 0.95,
+          source: 'tax-history'
+        }
+      }
+    }
+    
+    // Fallback: search the page text for tax history patterns
+    if (!fields.taxesAnnual) {
+      const pageText = document.body.innerText
+      
+      // Look for "2025 $9,843" type patterns near "tax" keywords
+      const taxHistoryPattern = /(?:tax|taxes)[\s\S]{0,200}?(20\d{2})\s+\$?([\d,]+)/gi
+      let match
+      let mostRecentYear = 0
+      let mostRecentTax = 0
+      
+      while ((match = taxHistoryPattern.exec(pageText)) !== null) {
+        const year = parseInt(match[1], 10)
+        const tax = parseInt(match[2].replace(/,/g, ''), 10)
+        
+        if (tax >= 100 && tax <= 500000 && year > mostRecentYear) {
+          mostRecentYear = year
+          mostRecentTax = tax
+        }
+      }
+      
+      if (mostRecentTax > 0 && mostRecentYear > 0) {
+        fields.taxesAnnual = { 
+          value: mostRecentTax, 
+          confidence: 0.85, 
+          source: `tax-history-${mostRecentYear}` 
+        }
+        fields.taxYear = {
+          value: mostRecentYear,
+          confidence: 0.85,
+          source: 'tax-history'
+        }
+      }
+    }
+  } catch (e) {
+    // Silently fail
+  }
+  
+  return fields
+}
+
+/**
  * Layer 2: Extract using semantic DOM heuristics
  */
 export function extractFromSemanticDOM(): Record<string, ExtractedField> {
@@ -392,6 +516,14 @@ export function extractZillowData(): ExtractionResult {
   // Layer 1: Structured data (highest confidence)
   const structuredFields = extractFromStructuredData()
   Object.assign(allFields, structuredFields)
+  
+  // Layer 1.5: Tax history table (high confidence for taxes specifically)
+  const taxHistoryFields = extractFromTaxHistory()
+  for (const [key, field] of Object.entries(taxHistoryFields)) {
+    if (!allFields[key] || field.confidence > allFields[key].confidence) {
+      allFields[key] = field
+    }
+  }
   
   // Layer 2: Semantic DOM (medium confidence)
   const semanticFields = extractFromSemanticDOM()

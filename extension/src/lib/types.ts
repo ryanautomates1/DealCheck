@@ -110,6 +110,8 @@ export interface ScrapedPropertyData {
   yearBuilt?: number
   hoaMonthly?: number
   taxesAnnual?: number
+  taxYear?: number  // Year the tax data is from (if pulled from tax history)
+  taxSource?: 'actual' | 'estimated'  // Whether taxes are from actual records or estimated
   zillowUrl?: string
 }
 
