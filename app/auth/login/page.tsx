@@ -17,23 +17,39 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
 
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      setLoading(false)
+      setError('Connection timed out. Please check your internet connection and try again.')
+    }, 15000)
+
     try {
+      console.log('[Login] Creating Supabase client...')
       const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({
+      
+      console.log('[Login] Attempting sign in...')
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
+      
+      clearTimeout(timeoutId)
+      console.log('[Login] Sign in result:', { hasData: !!data, hasError: !!error })
 
       if (error) {
+        console.error('[Login] Auth error:', error)
         setError(error.message)
+        setLoading(false)
         return
       }
 
+      console.log('[Login] Success, redirecting to dashboard...')
       router.push('/dashboard')
       router.refresh()
     } catch (err: any) {
+      clearTimeout(timeoutId)
+      console.error('[Login] Caught error:', err)
       setError(err.message || 'An error occurred')
-    } finally {
       setLoading(false)
     }
   }
