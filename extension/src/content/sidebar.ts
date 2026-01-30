@@ -877,6 +877,10 @@ async function handleSaveDeal(): Promise<void> {
     }
     
     const data = response.data
+    const dealId = data?.dealId ?? data?.deal?.id
+    if (!dealId) {
+      throw new Error('Save succeeded but no deal ID returned')
+    }
     
     // Show success message
     const content = document.querySelector('.dm-sidebar-content')
@@ -884,7 +888,7 @@ async function handleSaveDeal(): Promise<void> {
       const successMsg = document.createElement('div')
       successMsg.className = 'dm-success-msg'
       successMsg.innerHTML = `
-        Deal saved! <a href="https://getdealmetrics.com/deals/${data.deal.id}" target="_blank">View in Dashboard</a>
+        Deal saved! <a href="https://getdealmetrics.com/deals/${dealId}" target="_blank">View in Dashboard</a>
       `
       content.insertBefore(successMsg, content.firstChild)
     }
