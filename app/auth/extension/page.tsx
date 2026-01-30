@@ -48,8 +48,9 @@ export default function ExtensionLoginPage() {
       }
 
       console.log('[ExtensionAuth] Success, redirecting...')
-      // Redirect to success page with the access token
-      const successUrl = `/auth/extension/success?token=${data.session.access_token}&email=${encodeURIComponent(email)}`
+      // Redirect to success page with access and refresh tokens (refresh enables long-lived sessions)
+      const refresh = data.session.refresh_token ?? ''
+      const successUrl = `/auth/extension/success?token=${encodeURIComponent(data.session.access_token)}&email=${encodeURIComponent(email)}&refresh_token=${encodeURIComponent(refresh)}`
       window.location.href = successUrl
     } catch (err: any) {
       clearTimeout(timeoutId)

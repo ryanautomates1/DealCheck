@@ -11,6 +11,7 @@ function captureAuthToken() {
 
   const token = authDataEl.dataset.token
   const email = authDataEl.dataset.email
+  const refreshToken = authDataEl.dataset.refreshToken || ''
 
   if (!token) {
     console.log('[DealMetrics] No token in auth data')
@@ -19,9 +20,10 @@ function captureAuthToken() {
 
   console.log('[DealMetrics] Auth token captured, storing...')
 
-  // Store the token and email in chrome.storage.sync
+  // Store the token, refresh token, and email in chrome.storage.sync (refresh token enables long-lived sessions)
   chrome.storage.sync.set({ 
     authToken: token,
+    refreshToken,
     userEmail: email || ''
   }, () => {
     console.log('[DealMetrics] Auth token stored successfully')
@@ -44,7 +46,7 @@ const observer = new MutationObserver((mutations) => {
   for (const mutation of mutations) {
     if (mutation.type === 'childList') {
       const authDataEl = document.getElementById('extension-auth-data')
-      if (authDataEl && authDataEl.dataset.token) {
+      if (authDataEl?.dataset.token) {
         captureAuthToken()
         observer.disconnect()
         break

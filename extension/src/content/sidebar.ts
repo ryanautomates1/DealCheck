@@ -919,7 +919,7 @@ async function handleSaveDeal(): Promise<void> {
     
     // If token is expired/invalid, clear it and prompt re-login
     if (isTokenError) {
-      await chrome.storage.sync.remove(['authToken', 'userEmail'])
+      await chrome.storage.sync.remove(['authToken', 'refreshToken', 'userEmail'])
       isLoggedIn = false
       authToken = null
     }

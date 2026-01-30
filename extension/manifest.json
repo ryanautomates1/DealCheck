@@ -14,7 +14,7 @@
     "https://*/*"
   ],
   "action": {
-    "default_popup": "popup.html"
+    "default_title": "DealMetrics - Click to open Dashboard"
   },
   "content_scripts": [
     {

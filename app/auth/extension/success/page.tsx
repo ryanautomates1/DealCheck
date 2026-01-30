@@ -10,6 +10,7 @@ function SuccessContent() {
   
   const token = searchParams.get('token')
   const email = searchParams.get('email')
+  const refreshToken = searchParams.get('refresh_token')
 
   useEffect(() => {
     // The content script will read the token from the data attribute
@@ -52,6 +53,7 @@ function SuccessContent() {
         id="extension-auth-data" 
         data-token={token} 
         data-email={email || ''} 
+        data-refresh-token={refreshToken || ''} 
         style={{ display: 'none' }}
       />
       
