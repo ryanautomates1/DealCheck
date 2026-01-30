@@ -56,7 +56,10 @@ export function toDbDeal(deal: Partial<Deal>): Record<string, any> {
 }
 
 // Convert snake_case database row to camelCase Deal (exported for import route admin path)
-export function fromDbDeal(row: Record<string, any>): Deal {
+export function fromDbDeal(row: Record<string, any> | null | undefined): Deal {
+  if (row == null) {
+    throw new Error('fromDbDeal: row is null or undefined')
+  }
   return {
     id: row.id,
     userId: row.user_id,
@@ -187,8 +190,10 @@ export class SupabaseDealRepository implements IDealRepository {
       .select()
       .single()
     if (error) throw error
-    if (!data) throw new Error('Database did not return the updated deal')
-    return fromDbDeal(data)
+    if (data == null) throw new Error('Database did not return the updated deal')
+    const updated = fromDbDeal(data)
+    if (updated.id == null) throw new Error('Updated deal missing id')
+    return updated
   }
 
   async delete(id: string, userId: string): Promise<void> {

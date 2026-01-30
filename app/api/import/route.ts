@@ -178,35 +178,47 @@ export async function POST(request: NextRequest) {
       notes: null,
     }
     
-    let deal: Deal
+    let dealId: string
     if (useAdminForImport) {
       const admin = createAdminClient()
-      if (existingDeal) {
-        deal = await supabaseDealRepository.updateWithClient(admin, existingDeal.id, userId, dealData)
-      } else {
-        deal = await supabaseDealRepository.createWithClient(admin, {
-          ...dealData,
-          userId,
-        } as Omit<Deal, 'id' | 'createdAt' | 'updatedAt'>)
+      const deal = existingDeal
+        ? await supabaseDealRepository.updateWithClient(admin, existingDeal.id, userId, dealData)
+        : await supabaseDealRepository.createWithClient(admin, {
+            ...dealData,
+            userId,
+          } as Omit<Deal, 'id' | 'createdAt' | 'updatedAt'>)
+      dealId = deal?.id ?? ''
+      if (!dealId) {
+        console.error('[import] Deal missing id after create/update', { deal })
+        return NextResponse.json(
+          { error: 'Server error: deal not created', step: 'after_save' },
+          { status: 500 }
+        )
       }
       await supabaseImportLogRepository.createWithClient(admin, {
-        dealId: deal.id,
+        dealId,
         zillowUrl: validated.zillowUrl,
         result: importStatus === 'success' ? 'success' : importStatus === 'partial' ? 'partial' : 'fail',
         missingFieldsCount: validated.missingFields.length,
         extractorVersion: validated.extractorVersion,
       })
     } else {
-      if (existingDeal) {
-        deal = await dealRepository.update(existingDeal.id, userId, dealData)
-      } else {
-        deal = await dealRepository.create({
-          ...dealData,
-          userId,
-        } as Omit<Deal, 'id' | 'createdAt' | 'updatedAt'>)
+      const deal = existingDeal
+        ? await dealRepository.update(existingDeal.id, userId, dealData)
+        : await dealRepository.create({
+            ...dealData,
+            userId,
+          } as Omit<Deal, 'id' | 'createdAt' | 'updatedAt'>)
+      dealId = deal?.id ?? ''
+      if (!dealId) {
+        console.error('[import] Deal missing id after create/update', { deal })
+        return NextResponse.json(
+          { error: 'Server error: deal not created', step: 'after_save' },
+          { status: 500 }
+        )
       }
       await importLogRepository.create({
-        dealId: deal.id,
+        dealId,
         zillowUrl: validated.zillowUrl,
         result: importStatus === 'success' ? 'success' : importStatus === 'partial' ? 'partial' : 'fail',
         missingFieldsCount: validated.missingFields.length,
@@ -214,17 +226,9 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    if (!deal?.id) {
-      console.error('[import] Deal missing id after create/update', { deal })
-      return NextResponse.json(
-        { error: 'Server error: deal not created', step: 'after_save' },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({ 
-      dealId: deal.id,
-      importsRemaining: remaining 
+    return NextResponse.json({
+      dealId,
+      importsRemaining: remaining,
     }, { status: 201 })
   } catch (error: any) {
     console.error('Error importing deal at step:', debugStep, error)

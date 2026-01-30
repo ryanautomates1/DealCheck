@@ -819,20 +819,26 @@ function handleInputChange(inputId: string, value: string | number): void {
   updateSidebar()
 }
 
-/** Safely get deal ID from background save response. Handles { data: { dealId } }, { dealId }, or { data: { deal: { id } } }; never reads .id on undefined. */
+/** Safely get deal ID from background save response. Uses optional chaining so never reads .id on undefined. */
 function getDealIdFromSaveResponse(response: unknown): string | null {
-  if (!response || typeof response !== 'object') return null
-  const r = response as Record<string, unknown>
-  if (typeof r.dealId === 'string') return r.dealId
-  const data = r.data
-  if (data && typeof data === 'object') {
-    const d = data as Record<string, unknown>
-    if (typeof d.dealId === 'string') return d.dealId
-    const deal = d.deal
-    if (deal && typeof deal === 'object') {
-      const id = (deal as Record<string, unknown>).id
-      if (typeof id === 'string') return id
+  try {
+    if (!response || typeof response !== 'object') return null
+    const r = response as Record<string, unknown>
+    const topDealId = r?.dealId
+    if (typeof topDealId === 'string') return topDealId
+    const data = r?.data
+    if (data && typeof data === 'object') {
+      const d = data as Record<string, unknown>
+      const dataDealId = d?.dealId
+      if (typeof dataDealId === 'string') return dataDealId
+      const deal = d?.deal
+      if (deal != null && typeof deal === 'object') {
+        const id = (deal as Record<string, unknown>)?.id
+        if (typeof id === 'string') return id
+      }
     }
+  } catch {
+    return null
   }
   return null
 }
@@ -893,13 +899,19 @@ async function handleSaveDeal(): Promise<void> {
     if (!response.success) {
       throw new Error(response.error || 'Failed to save deal')
     }
-    
-    const dealId = getDealIdFromSaveResponse(response)
+
+    // Extract dealId safely (never throw; if anything fails we still show success)
+    let dealId: string | null = null
+    try {
+      dealId = getDealIdFromSaveResponse(response)
+    } catch {
+      dealId = null
+    }
     if (!dealId) {
       console.warn('[DealMetrics] Save succeeded but dealId missing from response shape:', response)
     }
 
-    // Show success message (never read .id here; dealId may be null)
+    // Show success message (dealId may be null; never read .id here)
     try {
       const content = document.querySelector('.dm-sidebar-content')
       if (content) {
@@ -914,7 +926,7 @@ async function handleSaveDeal(): Promise<void> {
     } catch (e) {
       console.error('[DealMetrics] Error showing success message:', e)
     }
-    
+
     if (saveBtn) {
       saveBtn.innerHTML = 'Saved!'
       setTimeout(() => {

@@ -19,10 +19,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'saveDeal') {
     handleSaveDeal(request.payload, request.authToken)
       .then(result => {
-        const dealId = result?.dealId ?? null
-        sendResponse({ success: true, data: result, dealId: dealId ?? undefined })
+        let dealId: string | null = null
+        try {
+          const data = result != null && typeof result === 'object' ? (result as Record<string, unknown>) : {}
+          const raw = data?.dealId
+          dealId = typeof raw === 'string' ? raw : null
+        } catch {
+          dealId = null
+        }
+        let importsRemaining: number | undefined
+        try {
+          const r = result != null && typeof result === 'object' ? (result as Record<string, unknown>) : {}
+          importsRemaining = typeof r?.importsRemaining === 'number' ? r.importsRemaining : undefined
+        } catch {
+          importsRemaining = undefined
+        }
+        sendResponse({
+          success: true,
+          dealId: dealId ?? undefined,
+          data: { dealId: dealId ?? undefined, importsRemaining },
+        })
       })
-      .catch(error => sendResponse({ success: false, error: error.message }))
+      .catch(error => sendResponse({ success: false, error: error?.message ?? 'Failed to save deal' }))
     return true
   }
   if (request.action === 'getValidToken') {
