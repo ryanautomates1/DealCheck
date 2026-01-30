@@ -14,6 +14,7 @@ import {
   INVESTMENT_ASSUMPTIONS,
   PurchaseType
 } from '../lib/types'
+import { escapeHtml } from '../lib/utils'
 
 let sidebarElement: HTMLElement | null = null
 let currentAssumptions: UserAssumptions = { ...DEFAULT_ASSUMPTIONS }
@@ -99,11 +100,11 @@ function createSidebarHTML(): string {
     ? calculateHoldingPeriodAnalysis(holdingPeriodInputs)
     : null
   
-  const addressDisplay = scrapedData.address || 'Property Address'
+  const addressDisplay = escapeHtml(scrapedData.address || 'Property Address')
   const priceDisplay = scrapedData.listPrice ? formatCurrency(scrapedData.listPrice) : '$--'
-  const bedsDisplay = scrapedData.beds ?? '--'
-  const bathsDisplay = scrapedData.baths ?? '--'
-  const sqftDisplay = scrapedData.sqft ? scrapedData.sqft.toLocaleString() : '--'
+  const bedsDisplay = escapeHtml(String(scrapedData.beds ?? '--'))
+  const bathsDisplay = escapeHtml(String(scrapedData.baths ?? '--'))
+  const sqftDisplay = escapeHtml(scrapedData.sqft ? scrapedData.sqft.toLocaleString() : '--')
   
   // Monthly payment breakdown
   const loanAmount = inputs.purchasePrice * (1 - inputs.downPaymentPct / 100)
@@ -1208,7 +1209,7 @@ async function handleSaveDeal(): Promise<void> {
         const successMsg = document.createElement('div')
         successMsg.className = 'dm-success-msg'
         const link = dealId
-          ? `Deal saved! <a href="https://getdealmetrics.com/deals/${dealId}" target="_blank">View in Dashboard</a>`
+          ? `Deal saved! <a href="https://getdealmetrics.com/deals/${escapeHtml(dealId)}" target="_blank">View in Dashboard</a>`
           : 'Deal saved! <a href="https://getdealmetrics.com/dashboard" target="_blank">View in Dashboard</a>'
         successMsg.innerHTML = link
         content.insertBefore(successMsg, content.firstChild)

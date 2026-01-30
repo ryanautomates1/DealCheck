@@ -1,28 +1,36 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 
+function parseHashParams(): { token: string | null; email: string | null; refreshToken: string | null } {
+  if (typeof window === 'undefined') return { token: null, email: null, refreshToken: null }
+  const params = new URLSearchParams(window.location.hash.slice(1))
+  return {
+    token: params.get('token'),
+    email: params.get('email'),
+    refreshToken: params.get('refresh_token'),
+  }
+}
+
 function SuccessContent() {
-  const searchParams = useSearchParams()
+  const [params] = useState(parseHashParams)
+  const { token, email, refreshToken } = params
   const [status, setStatus] = useState<'transferring' | 'success' | 'error'>('transferring')
-  
-  const token = searchParams.get('token')
-  const email = searchParams.get('email')
-  const refreshToken = searchParams.get('refresh_token')
 
   useEffect(() => {
-    // The content script will read the token from the data attribute
-    // and store it in chrome.storage.sync
-    
-    // Give the content script time to capture the token
-    const timer = setTimeout(() => {
-      setStatus('success')
-    }, 1500)
-
-    return () => clearTimeout(timer)
+    // Clear hash from URL immediately so tokens aren't visible in address bar or history
+    if (typeof window !== 'undefined' && window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    }
   }, [])
+
+  useEffect(() => {
+    if (!token) return
+    // Give the content script time to capture the token from the data attribute
+    const timer = setTimeout(() => setStatus('success'), 1500)
+    return () => clearTimeout(timer)
+  }, [token])
 
   if (!token) {
     return (
@@ -79,7 +87,7 @@ function SuccessContent() {
             </div>
             <h1 className="text-2xl font-bold text-white mb-4">Extension Connected!</h1>
             <p className="text-blue-200 mb-2">
-              {email && <>Signed in as <span className="font-medium text-white">{email}</span></>}
+              {email ? <>Signed in as <span className="font-medium text-white">{email}</span></> : null}
             </p>
             <p className="text-blue-200 mb-6">
               You can now close this tab and return to the extension to import listings.

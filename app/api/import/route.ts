@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUserId, checkAndIncrementImportCount, getUserIdFromApiKey, getUserIdFromToken } from '@/lib/auth'
+import { apiErrorResponse } from '@/lib/api-error'
+import { checkRateLimit, getClientIdentifier } from '@/lib/rate-limit'
 import { dealRepository, importLogRepository } from '@/lib/repositories'
 import { supabaseDealRepository, fromDbDeal } from '@/lib/repositories/supabase-deal-repository'
 import { supabaseImportLogRepository } from '@/lib/repositories/supabase-import-log-repository'
 import { createAdminClient } from '@/lib/supabase/server'
 import { extensionImportSchema } from '@/lib/schemas'
 import { Deal, ImportStatus } from '@/lib/types'
+
+const IMPORT_RATE_LIMIT = 30
+const IMPORT_RATE_WINDOW_MS = 60_000
 
 function shouldUseSupabase(): boolean {
   if (process.env.NODE_ENV === 'production') return true
@@ -231,32 +236,22 @@ export async function POST(request: NextRequest) {
       importsRemaining: remaining,
     }, { status: 201 })
   } catch (error: any) {
-    console.error('Error importing deal at step:', debugStep, error)
-    
     if (error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized', step: debugStep }, { status: 401 })
+      return apiErrorResponse('Unauthorized', 401, { step: debugStep, details: error.message })
     }
     if (error.message === 'Invalid or expired token') {
-      return NextResponse.json({ error: 'Invalid or expired token', step: debugStep }, { status: 401 })
+      return apiErrorResponse('Invalid or expired token', 401, { step: debugStep, details: error.message })
     }
     if (error.message === 'Profile not found') {
-      return NextResponse.json({ error: 'Profile not found - please complete account setup', step: debugStep }, { status: 404 })
+      return apiErrorResponse('Profile not found - please complete account setup', 404, { step: debugStep })
     }
     if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors, step: debugStep },
-        { status: 400 }
-      )
+      return apiErrorResponse('Validation error', 400, { step: debugStep, details: error.errors })
     }
-    
-    // Always return detailed error info for debugging
-    return NextResponse.json(
-      { 
-        error: error.message || 'Failed to import deal',
-        step: debugStep,
-        type: error.name || 'Error'
-      },
-      { status: 500 }
-    )
+    return apiErrorResponse('An error occurred. Please try again.', 500, {
+      step: debugStep,
+      type: error.name || 'Error',
+      details: error.message,
+    })
   }
 }

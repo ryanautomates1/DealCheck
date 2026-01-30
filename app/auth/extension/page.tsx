@@ -28,8 +28,12 @@ export default function ExtensionLoginPage() {
       }
 
       const { access_token, refresh_token } = await signInWithPasswordDirect(email, password)
-      const successUrl = `/auth/extension/success?token=${encodeURIComponent(access_token)}&email=${encodeURIComponent(email)}&refresh_token=${encodeURIComponent(refresh_token)}`
-      window.location.href = successUrl
+      // Use hash fragment so tokens never hit server logs or referrer; success page will clear hash after reading
+      const params = new URLSearchParams()
+      params.set('token', access_token)
+      params.set('refresh_token', refresh_token)
+      params.set('email', email)
+      window.location.href = `/auth/extension/success#${params.toString()}`
     } catch (err: any) {
       console.error('[ExtensionAuth] Caught error:', err)
       setError(err.message || 'An error occurred. Please try again.')

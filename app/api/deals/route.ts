@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUserId } from '@/lib/auth'
+import { apiErrorResponse } from '@/lib/api-error'
 import { dealRepository } from '@/lib/repositories'
 import { createDealSchema } from '@/lib/schemas'
 import { Deal } from '@/lib/types'
@@ -16,12 +17,14 @@ export async function GET(request: NextRequest) {
       : await dealRepository.findAll(userId)
     
     return NextResponse.json({ deals })
-  } catch (error) {
-    console.error('Error fetching deals:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch deals' },
-      { status: 500 }
-    )
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    return apiErrorResponse('Something went wrong', 500, {
+      type: error?.name,
+      details: error?.message,
+    })
   }
 }
 
@@ -109,16 +112,15 @@ export async function POST(request: NextRequest) {
     const deal = await dealRepository.create(newDeal)
     return NextResponse.json({ deal }, { status: 201 })
   } catch (error: any) {
-    if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      )
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    console.error('Error creating deal:', error)
-    return NextResponse.json(
-      { error: 'Failed to create deal' },
-      { status: 500 }
-    )
+    if (error.name === 'ZodError') {
+      return apiErrorResponse('Validation error', 400, { details: error.errors })
+    }
+    return apiErrorResponse('Something went wrong', 500, {
+      type: error.name,
+      details: error.message,
+    })
   }
 }

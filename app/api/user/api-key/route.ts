@@ -7,6 +7,12 @@ import { cookies } from 'next/headers'
 export async function GET() {
   try {
     if (process.env.USE_SUPABASE !== 'true') {
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          { error: 'API key service is unavailable' },
+          { status: 503 }
+        )
+      }
       return NextResponse.json({ apiKey: 'dm_demo_key_for_local_development' })
     }
 
@@ -47,6 +53,12 @@ export async function GET() {
 export async function POST() {
   try {
     if (process.env.USE_SUPABASE !== 'true') {
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          { error: 'API key service is unavailable' },
+          { status: 503 }
+        )
+      }
       return NextResponse.json({ apiKey: 'dm_demo_key_for_local_development' })
     }
 
@@ -76,6 +88,9 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     console.error('Error generating API key:', error)
-    return NextResponse.json({ error: 'Failed to generate API key' }, { status: 500 })
+    return NextResponse.json(
+      { error: process.env.NODE_ENV === 'production' ? 'Something went wrong' : 'Failed to generate API key' },
+      { status: 500 }
+    )
   }
 }

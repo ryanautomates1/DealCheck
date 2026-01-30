@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUserId } from '@/lib/auth'
+import { apiErrorResponse } from '@/lib/api-error'
 import { dealRepository } from '@/lib/repositories'
 import { updateDealSchema } from '@/lib/schemas'
 
@@ -24,11 +25,10 @@ export async function GET(
     if (error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    console.error('Error fetching deal:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch deal' },
-      { status: 500 }
-    )
+    return apiErrorResponse('Something went wrong', 500, {
+      type: error.name,
+      details: error.message,
+    })
   }
 }
 
@@ -82,10 +82,9 @@ export async function DELETE(
     if (error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    console.error('Error deleting deal:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete deal' },
-      { status: 500 }
-    )
+    return apiErrorResponse('Something went wrong', 500, {
+      type: error.name,
+      details: error.message,
+    })
   }
 }

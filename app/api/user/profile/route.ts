@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching profile:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch profile' },
+      { error: process.env.NODE_ENV === 'production' ? 'Something went wrong' : 'Failed to fetch profile' },
       { status: 500 }
     )
   }

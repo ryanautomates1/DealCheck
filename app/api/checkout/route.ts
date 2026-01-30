@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
     console.error('Error creating checkout session:', error)
     return NextResponse.json(
-      { error: 'Failed to create checkout session' },
+      { error: process.env.NODE_ENV === 'production' ? 'Something went wrong' : 'Failed to create checkout session' },
       { status: 500 }
     )
   }
