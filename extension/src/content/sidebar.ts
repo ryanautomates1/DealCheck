@@ -64,7 +64,7 @@ function buildInputs(): UnderwritingInputs {
     pmiEnabled: currentAssumptions.downPaymentPct < 20,
     pmiMonthly: currentAssumptions.downPaymentPct < 20 ? (price * 0.005 / 12) : 0,
     taxesAnnual: scrapedData.taxesAnnual || (price * 0.012),
-    insuranceAnnual: price * 0.0035,
+    insuranceAnnual: scrapedData.insuranceAnnual || (price * 0.0035),
     hoaMonthly: scrapedData.hoaMonthly || 0,
     utilitiesMonthly: 0,
     rentMonthly: isPrimaryResidence ? 0 : (currentAssumptions.estimatedRent || price * 0.007),
@@ -257,7 +257,10 @@ function createSidebarHTML(): string {
           <span class="dm-metric-value">${formatCurrency(monthlyTaxes)}</span>
         </div>
         <div class="dm-metric-row">
-          <span class="dm-metric-label">Insurance</span>
+          <span class="dm-metric-label">
+            Insurance
+            <span class="dm-tax-source">${scrapedData.insuranceSource === 'actual' ? '(Zillow)' : '(est.)'}</span>
+          </span>
           <span class="dm-metric-value">${formatCurrency(monthlyInsurance)}</span>
         </div>
         ${inputs.hoaMonthly > 0 ? `
@@ -977,8 +980,12 @@ function refreshData(): void {
   
   // Determine if taxes are from actual history or estimated
   const taxSource = fields.taxesAnnual?.source
-  const isActualTax = taxSource?.startsWith('tax-history')
+  const isActualTax = taxSource?.startsWith('tax-history') || taxSource === 'payment-breakdown'
   const taxYear = fields.taxYear?.value as number | undefined
+  
+  // Determine if insurance is from Zillow or estimated
+  const insuranceSource = fields.insuranceAnnual?.source
+  const isActualInsurance = insuranceSource === 'payment-breakdown'
   
   scrapedData = {
     address: fields.address?.value as string | undefined,
@@ -995,6 +1002,8 @@ function refreshData(): void {
     taxesAnnual: fields.taxesAnnual?.value as number | undefined,
     taxYear: taxYear,
     taxSource: isActualTax ? 'actual' : 'estimated',
+    insuranceAnnual: fields.insuranceAnnual?.value as number | undefined,
+    insuranceSource: isActualInsurance ? 'actual' : 'estimated',
     zillowUrl: window.location.href,
   }
   updateSidebar()

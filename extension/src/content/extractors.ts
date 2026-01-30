@@ -204,6 +204,108 @@ export function extractFromTaxHistory(): Record<string, ExtractedField> {
 }
 
 /**
+ * Extract from Zillow Payment Breakdown section
+ * Gets monthly property taxes and insurance with high confidence
+ */
+export function extractFromPaymentBreakdown(): Record<string, ExtractedField> {
+  const fields: Record<string, ExtractedField> = {}
+  
+  try {
+    // Look for the Payment Breakdown section
+    const pageText = document.body.innerText
+    
+    // Pattern 1: Look for "Property taxes" followed by dollar amount
+    // e.g., "Property taxes $867" or "Property taxes: $867"
+    const taxPattern = /property\s*taxes[:\s]*\$\s*([\d,]+)/gi
+    let taxMatch
+    while ((taxMatch = taxPattern.exec(pageText)) !== null) {
+      const monthlyTax = parseInt(taxMatch[1].replace(/,/g, ''), 10)
+      if (monthlyTax >= 50 && monthlyTax <= 20000) {
+        // Convert monthly to annual
+        const annualTax = monthlyTax * 12
+        if (!fields.taxesAnnual || fields.taxesAnnual.confidence < 0.9) {
+          fields.taxesAnnual = {
+            value: annualTax,
+            confidence: 0.9,
+            source: 'payment-breakdown'
+          }
+        }
+        break
+      }
+    }
+    
+    // Pattern 2: Look for "Home insurance" or "Homeowners insurance" followed by dollar amount
+    // e.g., "Home insurance $182" or "Home insurance: $182"
+    const insurancePatterns = [
+      /home(?:owners?)?\s*insurance[:\s]*\$\s*([\d,]+)/gi,
+      /insurance[:\s]*\$\s*([\d,]+)(?:\s*\/?\s*mo)?/gi,
+    ]
+    
+    for (const pattern of insurancePatterns) {
+      let insuranceMatch
+      while ((insuranceMatch = pattern.exec(pageText)) !== null) {
+        const monthlyInsurance = parseInt(insuranceMatch[1].replace(/,/g, ''), 10)
+        if (monthlyInsurance >= 20 && monthlyInsurance <= 5000) {
+          // Convert monthly to annual
+          const annualInsurance = monthlyInsurance * 12
+          if (!fields.insuranceAnnual) {
+            fields.insuranceAnnual = {
+              value: annualInsurance,
+              confidence: 0.9,
+              source: 'payment-breakdown'
+            }
+            break
+          }
+        }
+      }
+      if (fields.insuranceAnnual) break
+    }
+    
+    // Pattern 3: Look in structured payment breakdown
+    // Try to find elements with these labels
+    const paymentItems = document.querySelectorAll('[class*="payment"], [class*="breakdown"], [data-testid*="payment"]')
+    
+    for (const item of paymentItems) {
+      const text = item.textContent || ''
+      
+      // Check for insurance
+      if (!fields.insuranceAnnual && /home\s*insurance|insurance/i.test(text)) {
+        const amountMatch = text.match(/\$\s*([\d,]+)/)
+        if (amountMatch) {
+          const monthlyInsurance = parseInt(amountMatch[1].replace(/,/g, ''), 10)
+          if (monthlyInsurance >= 20 && monthlyInsurance <= 5000) {
+            fields.insuranceAnnual = {
+              value: monthlyInsurance * 12,
+              confidence: 0.92,
+              source: 'payment-breakdown'
+            }
+          }
+        }
+      }
+      
+      // Check for property taxes (backup if not found in tax history)
+      if (!fields.taxesAnnual && /property\s*tax/i.test(text)) {
+        const amountMatch = text.match(/\$\s*([\d,]+)/)
+        if (amountMatch) {
+          const monthlyTax = parseInt(amountMatch[1].replace(/,/g, ''), 10)
+          if (monthlyTax >= 50 && monthlyTax <= 20000) {
+            fields.taxesAnnual = {
+              value: monthlyTax * 12,
+              confidence: 0.88,
+              source: 'payment-breakdown'
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // Silently fail
+  }
+  
+  return fields
+}
+
+/**
  * Layer 2: Extract using semantic DOM heuristics
  */
 export function extractFromSemanticDOM(): Record<string, ExtractedField> {
@@ -520,6 +622,14 @@ export function extractZillowData(): ExtractionResult {
   // Layer 1.5: Tax history table (high confidence for taxes specifically)
   const taxHistoryFields = extractFromTaxHistory()
   for (const [key, field] of Object.entries(taxHistoryFields)) {
+    if (!allFields[key] || field.confidence > allFields[key].confidence) {
+      allFields[key] = field
+    }
+  }
+  
+  // Layer 1.6: Payment breakdown (high confidence for taxes and insurance)
+  const paymentBreakdownFields = extractFromPaymentBreakdown()
+  for (const [key, field] of Object.entries(paymentBreakdownFields)) {
     if (!allFields[key] || field.confidence > allFields[key].confidence) {
       allFields[key] = field
     }

@@ -112,6 +112,8 @@ export interface ScrapedPropertyData {
   taxesAnnual?: number
   taxYear?: number  // Year the tax data is from (if pulled from tax history)
   taxSource?: 'actual' | 'estimated'  // Whether taxes are from actual records or estimated
+  insuranceAnnual?: number
+  insuranceSource?: 'actual' | 'estimated'  // Whether insurance is from Zillow or estimated
   zillowUrl?: string
 }
 
