@@ -16,7 +16,11 @@ function fromDbImportLog(row: Record<string, any>): ImportLog {
 
 export class SupabaseImportLogRepository implements IImportLogRepository {
   async create(log: Omit<ImportLog, 'id' | 'createdAt'>): Promise<ImportLog> {
-    const supabase = createClient()
+    return this.createWithClient(createClient(), log)
+  }
+
+  /** Create import log using the given Supabase client (e.g. admin to bypass RLS when auth is Bearer token). */
+  async createWithClient(supabase: ReturnType<typeof createClient>, log: Omit<ImportLog, 'id' | 'createdAt'>): Promise<ImportLog> {
     const { data, error } = await supabase
       .from('import_logs')
       .insert({
@@ -28,7 +32,6 @@ export class SupabaseImportLogRepository implements IImportLogRepository {
       })
       .select()
       .single()
-
     if (error) throw error
     return fromDbImportLog(data)
   }

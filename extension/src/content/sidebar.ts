@@ -819,6 +819,21 @@ function handleInputChange(inputId: string, value: string | number): void {
   updateSidebar()
 }
 
+/** Safely get deal ID from background save response. API returns { dealId, importsRemaining }; never read .id on undefined. */
+function getDealIdFromSaveResponse(response: unknown): string | null {
+  if (!response || typeof response !== 'object') return null
+  const r = response as Record<string, unknown>
+  const data = r.data
+  if (!data || typeof data !== 'object') return null
+  const d = data as Record<string, unknown>
+  if (typeof d.dealId === 'string') return d.dealId
+  const deal = d.deal
+  if (deal && typeof deal === 'object' && typeof (deal as Record<string, unknown>).id === 'string') {
+    return (deal as Record<string, unknown>).id as string
+  }
+  return null
+}
+
 // Handle save to dashboard
 async function handleSaveDeal(): Promise<void> {
   if (!authToken) {
@@ -876,10 +891,10 @@ async function handleSaveDeal(): Promise<void> {
       throw new Error(response.error || 'Failed to save deal')
     }
     
-    const data = response.data
-    const dealId = data?.dealId ?? data?.deal?.id
+    const dealId = getDealIdFromSaveResponse(response)
     if (!dealId) {
-      throw new Error('Save succeeded but no deal ID returned')
+      console.error('[DealMetrics] Unexpected save response shape:', response)
+      throw new Error('Save succeeded but no deal ID returned. Check console for response.')
     }
     
     // Show success message

@@ -1,9 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Deal } from '../types'
 import { IDealRepository } from './deal-repository.interface'
 
-// Convert camelCase Deal to snake_case for database
-function toDbDeal(deal: Partial<Deal>): Record<string, any> {
+// Convert camelCase Deal to snake_case for database (exported for import route admin path)
+export function toDbDeal(deal: Partial<Deal>): Record<string, any> {
   const mapping: Record<string, string> = {
     userId: 'user_id',
     zillowUrl: 'zillow_url',
@@ -55,8 +55,8 @@ function toDbDeal(deal: Partial<Deal>): Record<string, any> {
   return dbDeal
 }
 
-// Convert snake_case database row to camelCase Deal
-function fromDbDeal(row: Record<string, any>): Deal {
+// Convert snake_case database row to camelCase Deal (exported for import route admin path)
+export function fromDbDeal(row: Record<string, any>): Deal {
   return {
     id: row.id,
     userId: row.user_id,
@@ -155,24 +155,29 @@ export class SupabaseDealRepository implements IDealRepository {
   }
 
   async create(deal: Omit<Deal, 'id' | 'createdAt' | 'updatedAt'>): Promise<Deal> {
-    const supabase = createClient()
-    const dbDeal = toDbDeal(deal)
+    return this.createWithClient(createClient(), deal)
+  }
 
+  /** Create deal using the given Supabase client (e.g. admin to bypass RLS when auth is Bearer token). */
+  async createWithClient(supabase: ReturnType<typeof createClient>, deal: Omit<Deal, 'id' | 'createdAt' | 'updatedAt'>): Promise<Deal> {
+    const dbDeal = toDbDeal(deal)
     const { data, error } = await supabase
       .from('deals')
       .insert(dbDeal)
       .select()
       .single()
-
     if (error) throw error
     return fromDbDeal(data)
   }
 
   async update(id: string, userId: string, updates: Partial<Deal>): Promise<Deal> {
-    const supabase = createClient()
+    return this.updateWithClient(createClient(), id, userId, updates)
+  }
+
+  /** Update deal using the given Supabase client (e.g. admin to bypass RLS when auth is Bearer token). */
+  async updateWithClient(supabase: ReturnType<typeof createClient>, id: string, userId: string, updates: Partial<Deal>): Promise<Deal> {
     const dbUpdates = toDbDeal(updates)
     dbUpdates.updated_at = new Date().toISOString()
-
     const { data, error } = await supabase
       .from('deals')
       .update(dbUpdates)
@@ -180,7 +185,6 @@ export class SupabaseDealRepository implements IDealRepository {
       .eq('user_id', userId)
       .select()
       .single()
-
     if (error) throw error
     return fromDbDeal(data)
   }

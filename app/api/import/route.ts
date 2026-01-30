@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUserId, checkAndIncrementImportCount, getUserIdFromApiKey, getUserIdFromToken } from '@/lib/auth'
 import { dealRepository, importLogRepository } from '@/lib/repositories'
+import { supabaseDealRepository, fromDbDeal } from '@/lib/repositories/supabase-deal-repository'
+import { supabaseImportLogRepository } from '@/lib/repositories/supabase-import-log-repository'
+import { createAdminClient } from '@/lib/supabase/server'
 import { extensionImportSchema } from '@/lib/schemas'
 import { Deal, ImportStatus } from '@/lib/types'
+
+function shouldUseSupabase(): boolean {
+  if (process.env.NODE_ENV === 'production') return true
+  return process.env.USE_SUPABASE === 'true'
+}
 
 // POST /api/import - Accept extension payload
 export async function POST(request: NextRequest) {
@@ -61,9 +69,20 @@ export async function POST(request: NextRequest) {
       importStatus = 'partial'
     }
     
-    // Create or update deal
-    const existingDeal = await dealRepository.findByZillowUrl(validated.zillowUrl, userId)
-    
+    // When auth is Bearer token (extension), there is no cookie session so RLS blocks inserts.
+    // Use service-role client to create/update deal and import log (user already validated).
+    const authViaBearer = !!authHeader?.startsWith('Bearer ')
+    const useAdminForImport = authViaBearer && shouldUseSupabase()
+
+    let existingDeal: Deal | null
+    if (useAdminForImport) {
+      const admin = createAdminClient()
+      const { data: existingRow } = await admin.from('deals').select('*').eq('zillow_url', validated.zillowUrl).eq('user_id', userId).single()
+      existingDeal = existingRow ? fromDbDeal(existingRow) : null
+    } else {
+      existingDeal = await dealRepository.findByZillowUrl(validated.zillowUrl, userId)
+    }
+
     // Calculate assumed values based on property value
     const propertyValue = validated.extractedData.listPrice || 0
     
@@ -160,23 +179,40 @@ export async function POST(request: NextRequest) {
     }
     
     let deal: Deal
-    if (existingDeal) {
-      deal = await dealRepository.update(existingDeal.id, userId, dealData)
+    if (useAdminForImport) {
+      const admin = createAdminClient()
+      if (existingDeal) {
+        deal = await supabaseDealRepository.updateWithClient(admin, existingDeal.id, userId, dealData)
+      } else {
+        deal = await supabaseDealRepository.createWithClient(admin, {
+          ...dealData,
+          userId,
+        } as Omit<Deal, 'id' | 'createdAt' | 'updatedAt'>)
+      }
+      await supabaseImportLogRepository.createWithClient(admin, {
+        dealId: deal.id,
+        zillowUrl: validated.zillowUrl,
+        result: importStatus === 'success' ? 'success' : importStatus === 'partial' ? 'partial' : 'fail',
+        missingFieldsCount: validated.missingFields.length,
+        extractorVersion: validated.extractorVersion,
+      })
     } else {
-      deal = await dealRepository.create({
-        ...dealData,
-        userId,
-      } as Omit<Deal, 'id' | 'createdAt' | 'updatedAt'>)
+      if (existingDeal) {
+        deal = await dealRepository.update(existingDeal.id, userId, dealData)
+      } else {
+        deal = await dealRepository.create({
+          ...dealData,
+          userId,
+        } as Omit<Deal, 'id' | 'createdAt' | 'updatedAt'>)
+      }
+      await importLogRepository.create({
+        dealId: deal.id,
+        zillowUrl: validated.zillowUrl,
+        result: importStatus === 'success' ? 'success' : importStatus === 'partial' ? 'partial' : 'fail',
+        missingFieldsCount: validated.missingFields.length,
+        extractorVersion: validated.extractorVersion,
+      })
     }
-    
-    // Log import
-    await importLogRepository.create({
-      dealId: deal.id,
-      zillowUrl: validated.zillowUrl,
-      result: importStatus === 'success' ? 'success' : importStatus === 'partial' ? 'partial' : 'fail',
-      missingFieldsCount: validated.missingFields.length,
-      extractorVersion: validated.extractorVersion,
-    })
     
     return NextResponse.json({ 
       dealId: deal.id,
