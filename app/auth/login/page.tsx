@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, checkSupabaseReachable } from '@/lib/supabase/client'
+
+const SUPABASE_CHECKLIST = 'In Supabase Dashboard: Project Settings → General → click "Resume project" if paused. Ensure Auth → Providers → Email is enabled.'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -11,46 +13,46 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showRetry, setShowRetry] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setShowRetry(false)
     setLoading(true)
 
-    // Timeout allows for slow Supabase responses (cold start, region latency)
-    const timeoutMs = 45000 // 45 seconds
-    const timeoutId = setTimeout(() => {
-      setLoading(false)
-      setError('Sign-in is taking longer than usual. Please try again — the auth service may be temporarily slow.')
-    }, timeoutMs)
-
     try {
-      console.log('[Login] Creating Supabase client...')
-      const supabase = createClient()
-      
-      console.log('[Login] Attempting sign in...')
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      
-      clearTimeout(timeoutId)
-      console.log('[Login] Sign in result:', { hasData: !!data, hasError: !!error })
-
-      if (error) {
-        console.error('[Login] Auth error:', error)
-        setError(error.message)
+      const reachable = await checkSupabaseReachable()
+      if (!reachable) {
+        setError(`Cannot reach Supabase. Is your project paused? ${SUPABASE_CHECKLIST}`)
+        setShowRetry(true)
         setLoading(false)
         return
       }
 
-      console.log('[Login] Success, redirecting to dashboard...')
+      const timeoutMs = 45000
+      const timeoutId = setTimeout(() => {
+        setLoading(false)
+        setError(`Sign-in timed out. ${SUPABASE_CHECKLIST}`)
+        setShowRetry(true)
+      }, timeoutMs)
+
+      const supabase = createClient()
+      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+      clearTimeout(timeoutId)
+
+      if (authError) {
+        setError(authError.message)
+        setLoading(false)
+        return
+      }
+
       router.push('/dashboard')
       router.refresh()
     } catch (err: any) {
-      clearTimeout(timeoutId)
       console.error('[Login] Caught error:', err)
       setError(err.message || 'An error occurred')
+      setShowRetry(true)
       setLoading(false)
     }
   }
@@ -69,6 +71,15 @@ export default function LoginPage() {
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-600">{error}</p>
+              {showRetry && (
+                <button
+                  type="button"
+                  onClick={() => { setError(null); setShowRetry(false); }}
+                  className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800"
+                >
+                  Dismiss and try again
+                </button>
+              )}
             </div>
           )}
 
