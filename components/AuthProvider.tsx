@@ -167,14 +167,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null)
     window.postMessage({ type: 'DEALMETRICS_SIGN_OUT' }, window.location.origin)
     try {
-      await Promise.race([
-        supabase.auth.signOut({ scope: 'local' }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
-      ])
+      // Server-side signout clears auth cookies via response Set-Cookie; next load will have no session
+      await fetch('/api/auth/signout', { method: 'POST', credentials: 'include' })
     } catch (_) {
-      // Continue to redirect even if signOut times out or fails
+      // Continue to redirect even if request fails
     }
-    // Full page redirect so cookies/state are fully cleared and next visit shows login
+    // Full page redirect so next request sends no auth cookies
     window.location.href = '/auth/login'
   }
 
