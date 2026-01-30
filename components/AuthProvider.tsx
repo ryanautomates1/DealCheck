@@ -119,6 +119,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(null)
         extensionSessionRequested.current = true
         window.postMessage({ type: 'DEALMETRICS_REQUEST_EXTENSION_SESSION' }, window.location.origin)
+        // Retry once after delay so extension content script has time to load
+        setTimeout(() => {
+          if (extensionSessionRequested.current) {
+            window.postMessage({ type: 'DEALMETRICS_REQUEST_EXTENSION_SESSION' }, window.location.origin)
+          }
+        }, 600)
       }
       setLoading(false)
     })
@@ -157,18 +163,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signOut = async () => {
-    try {
-      // Clear Supabase session (cookies) first so a different account can sign in
-      const signOutPromise = supabase.auth.signOut()
-      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
-      await Promise.race([signOutPromise, timeout])
-    } catch (_) {
-      // Continue to clear state and redirect even if signOut times out or fails
-    }
     setUser(null)
     setProfile(null)
     window.postMessage({ type: 'DEALMETRICS_SIGN_OUT' }, window.location.origin)
-    router.push('/auth/login')
+    try {
+      await Promise.race([
+        supabase.auth.signOut({ scope: 'local' }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
+      ])
+    } catch (_) {
+      // Continue to redirect even if signOut times out or fails
+    }
+    // Full page redirect so cookies/state are fully cleared and next visit shows login
+    window.location.href = '/auth/login'
   }
 
   return (
