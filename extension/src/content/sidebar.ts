@@ -858,11 +858,19 @@ async function handleSaveDeal(): Promise<void> {
     }
     
     // Send to background script to avoid CORS issues
+    console.log('[DealMetrics] Saving deal...', { payload, hasToken: !!authToken })
+    
     const response = await chrome.runtime.sendMessage({
       action: 'saveDeal',
       payload,
       authToken,
     })
+    
+    console.log('[DealMetrics] Save response:', response)
+    
+    if (!response) {
+      throw new Error('No response from background script - extension may need reload')
+    }
     
     if (!response.success) {
       throw new Error(response.error || 'Failed to save deal')

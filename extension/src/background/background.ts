@@ -21,6 +21,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // Make API call to save deal
 async function handleSaveDeal(payload: any, authToken: string): Promise<any> {
+  console.log('[DealMetrics BG] Saving deal to API...', { hasToken: !!authToken, tokenLength: authToken?.length })
+  
   const response = await fetch(`${API_BASE_URL}/api/import`, {
     method: 'POST',
     headers: {
@@ -30,10 +32,15 @@ async function handleSaveDeal(payload: any, authToken: string): Promise<any> {
     body: JSON.stringify(payload),
   })
   
+  console.log('[DealMetrics BG] API response status:', response.status)
+  
   if (!response.ok) {
     const data = await response.json().catch(() => ({}))
+    console.error('[DealMetrics BG] API error:', data)
     throw new Error(data.error || `HTTP ${response.status}`)
   }
   
-  return response.json()
+  const result = await response.json()
+  console.log('[DealMetrics BG] API success:', result)
+  return result
 }
