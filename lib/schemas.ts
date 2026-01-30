@@ -19,7 +19,7 @@ export const extensionImportSchema = z.object({
   importedFields: z.array(z.string()),
   missingFields: z.array(z.string()),
   fieldConfidences: z.record(z.string(), z.number().min(0).max(1)).optional().default({}),
-  extractorVersion: z.enum(['structured_v1', 'semantic_v1', 'regex_v1']),
+  extractorVersion: z.enum(['structured_v1', 'semantic_v1', 'regex_v1', 'sidebar_v1']),
   purchaseType: z.enum(['primary_residence', 'investment_property', 'house_hack', 'vacation_home', 'other']),
   downPaymentPct: z.number().min(0).max(100),
 })
