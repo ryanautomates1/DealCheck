@@ -4,10 +4,9 @@
  */
 
 import { extractZillowData } from './extractors'
-import { calculateUnderwriting, calculatePrimaryResidenceAnalysis, calculateAllInCashRequired } from '../lib/engine'
+import { calculateUnderwriting, calculatePrimaryResidenceAnalysis, calculateAllInCashRequired, calculateHoldingPeriodAnalysis } from '../lib/engine'
 import { 
   UnderwritingInputs, 
-  UnderwritingOutputs, 
   PrimaryResidenceOutputs,
   ScrapedPropertyData, 
   UserAssumptions, 
@@ -76,12 +75,29 @@ function buildInputs(): UnderwritingInputs {
   }
 }
 
+// Build holding period inputs for analysis
+function buildHoldingPeriodInputs(): { underwritingInputs: UnderwritingInputs; holdingPeriodYears: number; appreciationRate: number; rentGrowthRate: number; expenseGrowthRate: number; sellingCostRate: number } {
+  return {
+    underwritingInputs: buildInputs(),
+    holdingPeriodYears: currentAssumptions.holdingPeriodYears,
+    appreciationRate: currentAssumptions.appreciationRate,
+    rentGrowthRate: currentAssumptions.rentGrowthRate,
+    expenseGrowthRate: currentAssumptions.expenseGrowthRate,
+    sellingCostRate: currentAssumptions.sellingCostRate,
+  }
+}
+
 // Create sidebar HTML
 function createSidebarHTML(): string {
   const inputs = buildInputs()
   const outputs = calculateUnderwriting(inputs)
   const isPrimaryResidence = currentAssumptions.purchaseType === 'primary_residence'
   const primaryOutputs = isPrimaryResidence ? calculatePrimaryResidenceAnalysis(inputs) : null
+  
+  const holdingPeriodInputs = buildHoldingPeriodInputs()
+  const holdingPeriodOutputs = currentAssumptions.holdingPeriodYears > 0
+    ? calculateHoldingPeriodAnalysis(holdingPeriodInputs)
+    : null
   
   const addressDisplay = scrapedData.address || 'Property Address'
   const priceDisplay = scrapedData.listPrice ? formatCurrency(scrapedData.listPrice) : '$--'
@@ -343,6 +359,73 @@ function createSidebarHTML(): string {
         </div>
         `}
       </div>
+      
+      <!-- Holding Period Assumptions (in Advanced area) -->
+      <div class="dm-section dm-holding-period">
+        <div class="dm-section-header">
+          <span>Holding Period</span>
+          <button class="dm-toggle-advanced" id="dm-toggle-holding">Assumptions</button>
+        </div>
+        
+        <div class="dm-holding-inputs" id="dm-holding-inputs" style="display: none;">
+          <div class="dm-input-row">
+            <label>Hold (years)</label>
+            <div class="dm-input-group">
+              <input type="number" id="dm-holding-years" value="${currentAssumptions.holdingPeriodYears}" min="1" max="30" step="1" class="dm-input">
+              <span class="dm-input-suffix">yrs</span>
+            </div>
+          </div>
+          <div class="dm-input-row">
+            <label>Appreciation</label>
+            <div class="dm-input-group">
+              <input type="number" id="dm-appreciation" value="${currentAssumptions.appreciationRate}" min="-5" max="15" step="0.5" class="dm-input">
+              <span class="dm-input-suffix">%/yr</span>
+            </div>
+          </div>
+          <div class="dm-input-row">
+            <label>Rent Growth</label>
+            <div class="dm-input-group">
+              <input type="number" id="dm-rent-growth" value="${currentAssumptions.rentGrowthRate}" min="-5" max="15" step="0.5" class="dm-input">
+              <span class="dm-input-suffix">%/yr</span>
+            </div>
+          </div>
+          <div class="dm-input-row">
+            <label>Expense Growth</label>
+            <div class="dm-input-group">
+              <input type="number" id="dm-expense-growth" value="${currentAssumptions.expenseGrowthRate}" min="-5" max="15" step="0.5" class="dm-input">
+              <span class="dm-input-suffix">%/yr</span>
+            </div>
+          </div>
+          <div class="dm-input-row">
+            <label>Selling Cost</label>
+            <div class="dm-input-group">
+              <input type="number" id="dm-selling-cost" value="${currentAssumptions.sellingCostRate}" min="0" max="15" step="0.5" class="dm-input">
+              <span class="dm-input-suffix">%</span>
+            </div>
+          </div>
+        </div>
+        
+        ${holdingPeriodOutputs ? `
+        <div class="dm-metrics dm-holding-metrics">
+          <div class="dm-metric-row dm-metric-highlight">
+            <span class="dm-metric-label">IRR</span>
+            <span class="dm-metric-value ${holdingPeriodOutputs.irr >= 0 ? 'dm-positive' : 'dm-negative'}">${formatPercent(holdingPeriodOutputs.irr)}</span>
+          </div>
+          <div class="dm-metric-row">
+            <span class="dm-metric-label">Equity Multiple</span>
+            <span class="dm-metric-value">${holdingPeriodOutputs.equityMultiple.toFixed(2)}x</span>
+          </div>
+          <div class="dm-metric-row">
+            <span class="dm-metric-label">Total Profit</span>
+            <span class="dm-metric-value ${holdingPeriodOutputs.exitScenario.totalProfit >= 0 ? 'dm-positive' : 'dm-negative'}">${formatCurrency(holdingPeriodOutputs.exitScenario.totalProfit)}</span>
+          </div>
+          <div class="dm-metric-row">
+            <span class="dm-metric-label">Total ROI</span>
+            <span class="dm-metric-value">${formatPercent(holdingPeriodOutputs.exitScenario.totalROI)}</span>
+          </div>
+        </div>
+        ` : ''}
+      </div>
     </div>
     
     <!-- Footer Actions -->
@@ -562,6 +645,16 @@ function createSidebarStyles(): string {
     
     .dm-toggle-advanced:hover {
       color: #3b82f6;
+    }
+    
+    .dm-holding-inputs {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e5e7eb;
+    }
+    
+    .dm-holding-metrics {
+      margin-top: 12px;
     }
     
     .dm-advanced-inputs {
@@ -814,6 +907,21 @@ function handleInputChange(inputId: string, value: string | number): void {
     case 'dm-rent':
       currentAssumptions.estimatedRent = Number(value)
       break
+    case 'dm-holding-years':
+      currentAssumptions.holdingPeriodYears = Math.max(1, Math.min(30, Number(value) || 5))
+      break
+    case 'dm-appreciation':
+      currentAssumptions.appreciationRate = Number(value)
+      break
+    case 'dm-rent-growth':
+      currentAssumptions.rentGrowthRate = Number(value)
+      break
+    case 'dm-expense-growth':
+      currentAssumptions.expenseGrowthRate = Number(value)
+      break
+    case 'dm-selling-cost':
+      currentAssumptions.sellingCostRate = Math.max(0, Number(value))
+      break
   }
   
   updateSidebar()
@@ -1026,11 +1134,20 @@ function attachEventListeners(): void {
     }
   })
   
+  // Toggle holding period assumptions
+  document.getElementById('dm-toggle-holding')?.addEventListener('click', () => {
+    const holding = document.getElementById('dm-holding-inputs')
+    if (holding) {
+      holding.style.display = holding.style.display === 'none' ? 'block' : 'none'
+    }
+  })
+  
   // Input handlers
   const inputs = [
     'dm-purchase-type', 'dm-down-payment', 'dm-interest-rate', 'dm-loan-term',
-    'dm-closing-costs', 'dm-vacancy', 'dm-management', 'dm-maintenance', 
-    'dm-capex', 'dm-rent'
+    'dm-closing-costs', 'dm-vacancy', 'dm-management', 'dm-maintenance',
+    'dm-capex', 'dm-rent',
+    'dm-holding-years', 'dm-appreciation', 'dm-rent-growth', 'dm-expense-growth', 'dm-selling-cost'
   ]
   
   inputs.forEach(id => {

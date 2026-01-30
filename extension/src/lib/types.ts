@@ -131,6 +131,12 @@ export interface UserAssumptions {
   managementRate: number
   // Estimated rent for primary residence comparison
   estimatedRent: number
+  // Holding period (for exit analysis)
+  holdingPeriodYears: number
+  appreciationRate: number
+  rentGrowthRate: number
+  expenseGrowthRate: number
+  sellingCostRate: number
 }
 
 // Default assumptions
@@ -145,6 +151,11 @@ export const DEFAULT_ASSUMPTIONS: UserAssumptions = {
   vacancyRate: 0,
   managementRate: 0,
   estimatedRent: 0,
+  holdingPeriodYears: 5,
+  appreciationRate: 3,
+  rentGrowthRate: 3,
+  expenseGrowthRate: 3,
+  sellingCostRate: 6,
 }
 
 // Investment property defaults
