@@ -908,12 +908,38 @@ async function handleSaveDeal(): Promise<void> {
   } catch (error: any) {
     console.error('Save error:', error)
     
+    const errorMessage = error.message || 'Failed to save deal'
+    const isTokenError = errorMessage.toLowerCase().includes('token') || 
+                         errorMessage.toLowerCase().includes('unauthorized') ||
+                         errorMessage.toLowerCase().includes('401')
+    
+    // If token is expired/invalid, clear it and prompt re-login
+    if (isTokenError) {
+      await chrome.storage.sync.remove(['authToken', 'userEmail'])
+      isLoggedIn = false
+      authToken = null
+    }
+    
     const content = document.querySelector('.dm-sidebar-content')
     if (content) {
       const errorMsg = document.createElement('div')
       errorMsg.className = 'dm-error-msg'
-      errorMsg.textContent = error.message || 'Failed to save deal'
+      
+      if (isTokenError) {
+        errorMsg.innerHTML = `
+          Session expired. <button id="dm-reauth-btn" style="color: #2563eb; text-decoration: underline; background: none; border: none; cursor: pointer;">Sign in again</button>
+        `
+      } else {
+        errorMsg.textContent = errorMessage
+      }
       content.insertBefore(errorMsg, content.firstChild)
+      
+      // Attach re-auth button handler
+      if (isTokenError) {
+        document.getElementById('dm-reauth-btn')?.addEventListener('click', () => {
+          handleSignIn()
+        })
+      }
     }
     
     if (saveBtn) {
@@ -926,6 +952,11 @@ async function handleSaveDeal(): Promise<void> {
         </svg>
         Save to Dashboard
       `
+    }
+    
+    // Refresh sidebar to show logged-out state if token was cleared
+    if (isTokenError) {
+      setTimeout(() => updateSidebar(), 500)
     }
   }
 }
