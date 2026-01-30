@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient, checkSupabaseReachable } from '@/lib/supabase/client'
+import { checkSupabaseReachable, signInWithPasswordDirect } from '@/lib/supabase/client'
 
-const SUPABASE_CHECKLIST = 'In Supabase Dashboard: Project Settings → General → click "Resume project" if paused. Ensure Auth → Providers → Email is enabled.'
+const SUPABASE_CHECKLIST = 'Supabase Dashboard: Project Settings → General (Resume if paused). Auth → Providers → Email enabled. Auth → URL Configuration → Site URL set to your app URL (e.g. https://getdealmetrics.com).'
 
 export default function ExtensionLoginPage() {
   const [email, setEmail] = useState('')
@@ -19,42 +19,16 @@ export default function ExtensionLoginPage() {
     setLoading(true)
 
     try {
-      // 1. Check Supabase is reachable (catches paused project, network issues)
-      console.log('[ExtensionAuth] Checking Supabase connectivity...')
       const reachable = await checkSupabaseReachable()
       if (!reachable) {
-        setError(`Cannot reach Supabase. Is your project paused? ${SUPABASE_CHECKLIST}`)
+        setError(`Cannot reach Supabase Auth. ${SUPABASE_CHECKLIST}`)
         setShowRetry(true)
         setLoading(false)
         return
       }
-      console.log('[ExtensionAuth] Supabase reachable, signing in...')
 
-      // 2. Sign in (with long timeout for cold starts)
-      const timeoutMs = 45000
-      const timeoutId = setTimeout(() => {
-        setLoading(false)
-        setError(`Sign-in timed out. ${SUPABASE_CHECKLIST}`)
-        setShowRetry(true)
-      }, timeoutMs)
-
-      const supabase = createClient()
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
-      clearTimeout(timeoutId)
-
-      if (authError) {
-        setError(authError.message)
-        setLoading(false)
-        return
-      }
-      if (!data?.session) {
-        setError('Login failed. Please check your credentials and try again.')
-        setLoading(false)
-        return
-      }
-
-      const refresh = data.session.refresh_token ?? ''
-      const successUrl = `/auth/extension/success?token=${encodeURIComponent(data.session.access_token)}&email=${encodeURIComponent(email)}&refresh_token=${encodeURIComponent(refresh)}`
+      const { access_token, refresh_token } = await signInWithPasswordDirect(email, password)
+      const successUrl = `/auth/extension/success?token=${encodeURIComponent(access_token)}&email=${encodeURIComponent(email)}&refresh_token=${encodeURIComponent(refresh_token)}`
       window.location.href = successUrl
     } catch (err: any) {
       console.error('[ExtensionAuth] Caught error:', err)
@@ -83,6 +57,7 @@ export default function ExtensionLoginPage() {
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-600">{error}</p>
+              <p className="mt-1 text-xs text-gray-500">Open DevTools (F12) → Console for more details.</p>
               {showRetry && (
                 <button
                   type="button"

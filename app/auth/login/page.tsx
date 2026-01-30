@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient, checkSupabaseReachable } from '@/lib/supabase/client'
+import { createClient, checkSupabaseReachable, signInWithPasswordDirect } from '@/lib/supabase/client'
 
-const SUPABASE_CHECKLIST = 'In Supabase Dashboard: Project Settings → General → click "Resume project" if paused. Ensure Auth → Providers → Email is enabled.'
+const SUPABASE_CHECKLIST = 'Supabase Dashboard: Project Settings → General (Resume if paused). Auth → Providers → Email enabled. Auth → URL Configuration → Site URL set to your app URL (e.g. https://getdealmetrics.com).'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -24,29 +24,27 @@ export default function LoginPage() {
     try {
       const reachable = await checkSupabaseReachable()
       if (!reachable) {
-        setError(`Cannot reach Supabase. Is your project paused? ${SUPABASE_CHECKLIST}`)
+        setError(`Cannot reach Supabase Auth. ${SUPABASE_CHECKLIST}`)
         setShowRetry(true)
         setLoading(false)
         return
       }
 
-      const timeoutMs = 45000
-      const timeoutId = setTimeout(() => {
-        setLoading(false)
-        setError(`Sign-in timed out. ${SUPABASE_CHECKLIST}`)
-        setShowRetry(true)
-      }, timeoutMs)
-
+      const { access_token, refresh_token } = await signInWithPasswordDirect(email, password)
       const supabase = createClient()
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
-      clearTimeout(timeoutId)
-
-      if (authError) {
-        setError(authError.message)
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({ access_token, refresh_token })
+      if (sessionError) {
+        setError(sessionError.message || 'Session could not be saved. Try again.')
+        setShowRetry(true)
         setLoading(false)
         return
       }
-
+      if (!sessionData?.session) {
+        setError('Session could not be saved. Check browser cookie settings and try again.')
+        setShowRetry(true)
+        setLoading(false)
+        return
+      }
       router.push('/dashboard')
       router.refresh()
     } catch (err: any) {
@@ -71,6 +69,7 @@ export default function LoginPage() {
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-600">{error}</p>
+              <p className="mt-1 text-xs text-gray-500">Open DevTools (F12) → Console for more details.</p>
               {showRetry && (
                 <button
                   type="button"

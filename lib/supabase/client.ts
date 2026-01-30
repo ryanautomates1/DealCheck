@@ -16,21 +16,72 @@ export function createClient(): SupabaseClient {
   return createBrowserClient(url, key)
 }
 
-/** Check if Supabase is reachable (e.g. project not paused). Timeout 8s. */
+const AUTH_TIMEOUT_MS = 25000
+
+/** Check if Supabase Auth is reachable. Uses auth health endpoint. Timeout 8s. */
 export async function checkSupabaseReachable(): Promise<boolean> {
   const { url, key } = getSupabaseConfig()
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 8000)
   try {
-    const res = await fetch(`${url}/rest/v1/`, {
+    const res = await fetch(`${url}/auth/v1/health`, {
       method: 'GET',
-      headers: { apikey: key, Accept: 'application/json' },
+      headers: { apikey: key },
       signal: controller.signal,
     })
     clearTimeout(timeoutId)
-    return res.ok || res.status === 404 // 404 still means project is up
+    return res.ok
   } catch {
     clearTimeout(timeoutId)
     return false
   }
+}
+
+/** Sign in via direct Auth API with timeout. Bypasses Supabase client to avoid hangs. */
+export async function signInWithPasswordDirect(
+  email: string,
+  password: string
+): Promise<{ access_token: string; refresh_token: string }> {
+  const { url, key } = getSupabaseConfig()
+  const authUrl = `${url}/auth/v1/token?grant_type=password`
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), AUTH_TIMEOUT_MS)
+  let res: Response
+  try {
+    res = await fetch(authUrl, {
+      method: 'POST',
+      headers: {
+        apikey: key,
+        'Content-Type': 'application/json',
+        'X-Client-Info': 'dealmetrics-web',
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        gotrue_meta_security: {},
+      }),
+      signal: controller.signal,
+    })
+  } catch (err: any) {
+    clearTimeout(timeoutId)
+    if (err?.name === 'AbortError') {
+      throw new Error('Sign-in timed out. Try again.')
+    }
+    const msg = err?.message || String(err)
+    if (/failed to fetch|network|load/i.test(msg)) {
+      throw new Error('Network error: cannot reach Supabase. Check your connection or try again.')
+    }
+    throw new Error(msg || 'Sign-in failed')
+  }
+  clearTimeout(timeoutId)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const msg = data?.error_description ?? data?.msg ?? data?.error ?? `HTTP ${res.status}`
+    console.error('[Supabase Auth] Sign-in failed:', res.status, data)
+    throw new Error(typeof msg === 'string' ? msg : 'Sign-in failed')
+  }
+  const access_token = data.access_token
+  const refresh_token = data.refresh_token ?? ''
+  if (!access_token) throw new Error('No access token in response')
+  return { access_token, refresh_token }
 }
