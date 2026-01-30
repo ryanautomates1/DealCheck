@@ -819,17 +819,20 @@ function handleInputChange(inputId: string, value: string | number): void {
   updateSidebar()
 }
 
-/** Safely get deal ID from background save response. API returns { dealId, importsRemaining }; never read .id on undefined. */
+/** Safely get deal ID from background save response. Handles { data: { dealId } }, { dealId }, or { data: { deal: { id } } }; never reads .id on undefined. */
 function getDealIdFromSaveResponse(response: unknown): string | null {
   if (!response || typeof response !== 'object') return null
   const r = response as Record<string, unknown>
+  if (typeof r.dealId === 'string') return r.dealId
   const data = r.data
-  if (!data || typeof data !== 'object') return null
-  const d = data as Record<string, unknown>
-  if (typeof d.dealId === 'string') return d.dealId
-  const deal = d.deal
-  if (deal && typeof deal === 'object' && typeof (deal as Record<string, unknown>).id === 'string') {
-    return (deal as Record<string, unknown>).id as string
+  if (data && typeof data === 'object') {
+    const d = data as Record<string, unknown>
+    if (typeof d.dealId === 'string') return d.dealId
+    const deal = d.deal
+    if (deal && typeof deal === 'object') {
+      const id = (deal as Record<string, unknown>).id
+      if (typeof id === 'string') return id
+    }
   }
   return null
 }

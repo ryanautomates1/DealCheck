@@ -167,6 +167,7 @@ export class SupabaseDealRepository implements IDealRepository {
       .select()
       .single()
     if (error) throw error
+    if (!data) throw new Error('Database did not return the created deal')
     return fromDbDeal(data)
   }
 
@@ -186,6 +187,7 @@ export class SupabaseDealRepository implements IDealRepository {
       .select()
       .single()
     if (error) throw error
+    if (!data) throw new Error('Database did not return the updated deal')
     return fromDbDeal(data)
   }
 

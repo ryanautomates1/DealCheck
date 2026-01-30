@@ -213,7 +213,15 @@ export async function POST(request: NextRequest) {
         extractorVersion: validated.extractorVersion,
       })
     }
-    
+
+    if (!deal?.id) {
+      console.error('[import] Deal missing id after create/update', { deal })
+      return NextResponse.json(
+        { error: 'Server error: deal not created', step: 'after_save' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({ 
       dealId: deal.id,
       importsRemaining: remaining 
