@@ -348,6 +348,7 @@ function createSidebarHTML(): string {
               <span class="dm-input-suffix">%/yr</span>
             </div>
           </div>
+          ${!isPrimaryResidence ? `
           <div class="dm-input-row">
             <label>Rent Growth</label>
             <div class="dm-input-group">
@@ -355,6 +356,7 @@ function createSidebarHTML(): string {
               <span class="dm-input-suffix">%/yr</span>
             </div>
           </div>
+          ` : ''}
           <div class="dm-input-row">
             <label>Expense Growth</label>
             <div class="dm-input-group">
@@ -425,35 +427,11 @@ function createSidebarHTML(): string {
           </div>
         </div>
         
-        ${holdingPeriodOutputs.yearlyProjections.length > 0 ? `
-        <div class="dm-yearly-summary">
-          <div class="dm-yearly-title">Projection Snapshot</div>
-          <div class="dm-yearly-rows">
-            <div class="dm-yearly-row">
-              <span class="dm-yearly-label">Year 1 Cash Flow</span>
-              <span class="dm-yearly-value ${holdingPeriodOutputs.yearlyProjections[0].cashFlowAnnual >= 0 ? 'dm-positive' : 'dm-negative'}">${formatCurrency(holdingPeriodOutputs.yearlyProjections[0].cashFlowAnnual)}</span>
-            </div>
-            ${currentAssumptions.holdingPeriodYears >= 3 && holdingPeriodOutputs.yearlyProjections.length >= Math.ceil(currentAssumptions.holdingPeriodYears / 2) ? `
-            <div class="dm-yearly-row">
-              <span class="dm-yearly-label">Year ${Math.ceil(currentAssumptions.holdingPeriodYears / 2)} Cash Flow</span>
-              <span class="dm-yearly-value ${holdingPeriodOutputs.yearlyProjections[Math.ceil(currentAssumptions.holdingPeriodYears / 2) - 1].cashFlowAnnual >= 0 ? 'dm-positive' : 'dm-negative'}">${formatCurrency(holdingPeriodOutputs.yearlyProjections[Math.ceil(currentAssumptions.holdingPeriodYears / 2) - 1].cashFlowAnnual)}</span>
-            </div>
-            ` : ''}
-            <div class="dm-yearly-row">
-              <span class="dm-yearly-label">Year ${currentAssumptions.holdingPeriodYears} Cash Flow</span>
-              <span class="dm-yearly-value ${holdingPeriodOutputs.yearlyProjections[holdingPeriodOutputs.yearlyProjections.length - 1].cashFlowAnnual >= 0 ? 'dm-positive' : 'dm-negative'}">${formatCurrency(holdingPeriodOutputs.yearlyProjections[holdingPeriodOutputs.yearlyProjections.length - 1].cashFlowAnnual)}</span>
-            </div>
-            <div class="dm-yearly-row">
-              <span class="dm-yearly-label">End Equity</span>
-              <span class="dm-yearly-value">${formatCurrency(holdingPeriodOutputs.yearlyProjections[holdingPeriodOutputs.yearlyProjections.length - 1].equity)}</span>
-            </div>
-          </div>
-        </div>
-        ` : ''}
         ` : ''}
       </div>
       
-      <!-- Premium Metrics (LOCKED) -->
+      ${!isPrimaryResidence ? `
+      <!-- Premium Metrics (LOCKED) - Investment only -->
       <div class="dm-section dm-metrics dm-premium ${isLoggedIn ? '' : 'dm-locked'}">
         <div class="dm-section-header">
           <span>Advanced Analysis</span>
@@ -488,6 +466,7 @@ function createSidebarHTML(): string {
         </div>
         `}
       </div>
+      ` : ''}
     </div>
     
     <!-- Footer Actions -->
