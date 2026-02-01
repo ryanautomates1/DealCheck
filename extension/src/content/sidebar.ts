@@ -92,7 +92,9 @@ function buildHoldingPeriodInputs(): { underwritingInputs: UnderwritingInputs; h
 function createSidebarHTML(): string {
   const inputs = buildInputs()
   const outputs = calculateUnderwriting(inputs)
-  const isPrimaryResidence = currentAssumptions.purchaseType === 'primary_residence'
+  // Normalize purchase type so we reliably hide investment-only sections for primary residence
+  const purchaseTypeRaw = currentAssumptions.purchaseType ?? 'primary_residence'
+  const isPrimaryResidence = String(purchaseTypeRaw).toLowerCase() === 'primary_residence'
   const primaryOutputs = isPrimaryResidence ? calculatePrimaryResidenceAnalysis(inputs) : null
   
   const holdingPeriodInputs = buildHoldingPeriodInputs()
@@ -107,7 +109,7 @@ function createSidebarHTML(): string {
   const sqftDisplay = escapeHtml(scrapedData.sqft ? scrapedData.sqft.toLocaleString() : '--')
   
   // Advanced Analysis (Cap Rate, NOI, DSCR, Break-Even) only for investment / house hack — never for primary residence
-  const showAdvancedAnalysis = currentAssumptions.purchaseType !== 'primary_residence'
+  const showAdvancedAnalysis = !isPrimaryResidence
   const advancedAnalysisHTML = showAdvancedAnalysis
     ? `
       <div class="dm-section dm-metrics dm-premium ${isLoggedIn ? '' : 'dm-locked'}">
@@ -413,7 +415,7 @@ function createSidebarHTML(): string {
           </div>
         </div>
         
-        ${holdingPeriodOutputs ? `
+        ${holdingPeriodOutputs && !isPrimaryResidence ? `
         <div class="dm-holding-cards">
           <div class="dm-holding-card dm-card-irr">
             <div class="dm-holding-card-label">IRR</div>
