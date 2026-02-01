@@ -415,7 +415,15 @@ function createSidebarHTML(): string {
           </div>
         </div>
         
-        ${holdingPeriodOutputs && !isPrimaryResidence ? `
+        ${holdingPeriodOutputs ? (() => {
+          const esc = holdingPeriodOutputs.exitScenario
+          const initialLoan = inputs.purchasePrice * (1 - inputs.downPaymentPct / 100)
+          const principalPaydown = Math.max(0, initialLoan - esc.loanPayoff)
+          const appreciation = esc.salePrice - inputs.purchasePrice
+          const totalEquityGrowth = principalPaydown + appreciation
+          const appreciationPct = totalEquityGrowth > 0 ? (appreciation / totalEquityGrowth) * 100 : 50
+          const principalPct = totalEquityGrowth > 0 ? (principalPaydown / totalEquityGrowth) * 100 : 50
+          return `
         <div class="dm-holding-cards">
           <div class="dm-holding-card dm-card-irr">
             <div class="dm-holding-card-label">IRR</div>
@@ -429,47 +437,67 @@ function createSidebarHTML(): string {
           </div>
           <div class="dm-holding-card dm-card-profit">
             <div class="dm-holding-card-label">Total Profit</div>
-            <div class="dm-holding-card-value ${holdingPeriodOutputs.exitScenario.totalProfit >= 0 ? 'dm-positive' : 'dm-negative'}">${formatCurrency(holdingPeriodOutputs.exitScenario.totalProfit)}</div>
+            <div class="dm-holding-card-value ${esc.totalProfit >= 0 ? 'dm-positive' : 'dm-negative'}">${formatCurrency(esc.totalProfit)}</div>
             <div class="dm-holding-card-hint">Cash flow + sale - investment</div>
           </div>
           <div class="dm-holding-card dm-card-roi">
             <div class="dm-holding-card-label">Total ROI</div>
-            <div class="dm-holding-card-value ${holdingPeriodOutputs.exitScenario.totalROI >= 0 ? 'dm-positive' : 'dm-negative'}">${formatPercent(holdingPeriodOutputs.exitScenario.totalROI)}</div>
+            <div class="dm-holding-card-value ${esc.totalROI >= 0 ? 'dm-positive' : 'dm-negative'}">${formatPercent(esc.totalROI)}</div>
             <div class="dm-holding-card-hint">Profit / initial investment</div>
           </div>
         </div>
         
+        <div class="dm-growth-graphic">
+          <div class="dm-growth-title">Where your equity growth came from</div>
+          <div class="dm-growth-bar">
+            <div class="dm-growth-segment dm-growth-appreciation" style="width: ${Math.max(0, Math.min(100, appreciationPct))}%" title="Appreciation: ${formatCurrency(appreciation)}"></div>
+            <div class="dm-growth-segment dm-growth-principal" style="width: ${Math.max(0, Math.min(100, principalPct))}%" title="Principal paydown: ${formatCurrency(principalPaydown)}"></div>
+          </div>
+          <div class="dm-growth-legend">
+            <span class="dm-growth-legend-item"><span class="dm-growth-dot dm-growth-appreciation"></span> Appreciation ${formatCurrency(appreciation)}</span>
+            <span class="dm-growth-legend-item"><span class="dm-growth-dot dm-growth-principal"></span> Principal paydown ${formatCurrency(principalPaydown)}</span>
+          </div>
+        </div>
+        
         <div class="dm-exit-scenario">
-          <div class="dm-exit-title">Exit Scenario (Year ${currentAssumptions.holdingPeriodYears})</div>
+          <div class="dm-exit-title">When you sell (Year ${currentAssumptions.holdingPeriodYears})</div>
+          <p class="dm-exit-desc">Sale proceeds minus selling costs and remaining loan.</p>
           <div class="dm-exit-rows">
             <div class="dm-exit-row">
-              <span class="dm-exit-label">Sale Price</span>
-              <span class="dm-exit-value">${formatCurrency(holdingPeriodOutputs.exitScenario.salePrice)}</span>
+              <span class="dm-exit-label">Sale price</span>
+              <span class="dm-exit-value">${formatCurrency(esc.salePrice)}</span>
             </div>
             <div class="dm-exit-row">
-              <span class="dm-exit-label">Selling Costs</span>
-              <span class="dm-exit-value dm-negative">-${formatCurrency(holdingPeriodOutputs.exitScenario.sellingCosts)}</span>
+              <span class="dm-exit-label">− Selling costs</span>
+              <span class="dm-exit-value dm-negative">−${formatCurrency(esc.sellingCosts)}</span>
             </div>
             <div class="dm-exit-row">
-              <span class="dm-exit-label">Loan Payoff</span>
-              <span class="dm-exit-value dm-negative">-${formatCurrency(holdingPeriodOutputs.exitScenario.loanPayoff)}</span>
+              <span class="dm-exit-label">− Loan balance</span>
+              <span class="dm-exit-value dm-negative">−${formatCurrency(esc.loanPayoff)}</span>
             </div>
             <div class="dm-exit-row dm-exit-row-highlight">
-              <span class="dm-exit-label">Net Proceeds</span>
-              <span class="dm-exit-value dm-positive">${formatCurrency(holdingPeriodOutputs.exitScenario.netProceedsFromSale)}</span>
+              <span class="dm-exit-label">Cash to you</span>
+              <span class="dm-exit-value dm-positive">${formatCurrency(esc.netProceedsFromSale)}</span>
             </div>
-            <div class="dm-exit-row">
-              <span class="dm-exit-label">Cumulative Cash Flow</span>
-              <span class="dm-exit-value ${holdingPeriodOutputs.exitScenario.cumulativeCashFlow >= 0 ? 'dm-positive' : 'dm-negative'}">${formatCurrency(holdingPeriodOutputs.exitScenario.cumulativeCashFlow)}</span>
+          </div>
+          <div class="dm-exit-summary">
+            <div class="dm-exit-summary-row">
+              <span class="dm-exit-label">You put in</span>
+              <span class="dm-exit-value">${formatCurrency(esc.initialInvestment)}</span>
             </div>
-            <div class="dm-exit-row">
-              <span class="dm-exit-label">Initial Investment</span>
-              <span class="dm-exit-value">${formatCurrency(holdingPeriodOutputs.exitScenario.initialInvestment)}</span>
+            <div class="dm-exit-summary-row">
+              <span class="dm-exit-label">You get back (sale + cash flow)</span>
+              <span class="dm-exit-value dm-positive">${formatCurrency(esc.netProceedsFromSale + esc.cumulativeCashFlow)}</span>
+            </div>
+            <div class="dm-exit-summary-row dm-exit-profit">
+              <span class="dm-exit-label">Total profit</span>
+              <span class="dm-exit-value ${esc.totalProfit >= 0 ? 'dm-positive' : 'dm-negative'}">${formatCurrency(esc.totalProfit)} (${formatPercent(esc.totalROI)} ROI)</span>
             </div>
           </div>
         </div>
         
-        ` : ''}
+        `
+        })() : ''}
       </div>
       
       ${advancedAnalysisHTML}
@@ -746,6 +774,71 @@ function createSidebarStyles(): string {
       margin-top: 2px;
     }
     
+    .dm-growth-graphic {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    
+    .dm-growth-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 8px;
+    }
+    
+    .dm-growth-bar {
+      display: flex;
+      height: 20px;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #e2e8f0;
+      margin-bottom: 8px;
+    }
+    
+    .dm-growth-segment {
+      min-width: 2px;
+      transition: width 0.2s ease;
+    }
+    
+    .dm-growth-appreciation {
+      background: linear-gradient(90deg, #0ea5e9, #06b6d4);
+    }
+    
+    .dm-growth-principal {
+      background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+    }
+    
+    .dm-growth-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 16px;
+      font-size: 11px;
+      color: #64748b;
+    }
+    
+    .dm-growth-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .dm-growth-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+    }
+    
+    .dm-growth-dot.dm-growth-appreciation {
+      background: #0ea5e9;
+    }
+    
+    .dm-growth-dot.dm-growth-principal {
+      background: #8b5cf6;
+    }
+    
     .dm-exit-scenario {
       background: #f1f5f9;
       border: 1px solid #e2e8f0;
@@ -758,7 +851,35 @@ function createSidebarStyles(): string {
       font-size: 12px;
       font-weight: 600;
       color: #475569;
+      margin-bottom: 4px;
+    }
+    
+    .dm-exit-desc {
+      font-size: 11px;
+      color: #64748b;
       margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    
+    .dm-exit-summary {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .dm-exit-summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+    
+    .dm-exit-summary-row.dm-exit-profit {
+      font-weight: 600;
+      margin-top: 4px;
     }
     
     .dm-exit-rows {
