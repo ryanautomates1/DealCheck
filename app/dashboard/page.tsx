@@ -69,6 +69,19 @@ function DashboardContent() {
   const [filterImportStatus, setFilterImportStatus] = useState<ImportStatus | 'all'>('all')
   const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false)
   const [extensionInstalled, setExtensionInstalled] = useState(false)
+  const [selectedDealIds, setSelectedDealIds] = useState<Set<string>>(new Set())
+
+  const MAX_COMPARE = 5
+  const toggleCompare = (dealId: string) => (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setSelectedDealIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(dealId)) next.delete(dealId)
+      else if (next.size < MAX_COMPARE) next.add(dealId)
+      return next
+    })
+  }
 
   useEffect(() => {
     const check = () => {
@@ -364,12 +377,22 @@ function DashboardContent() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
             />
           </div>
-          <Link
-            href="/deals/new"
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap text-center"
-          >
-            Create Manual Deal
-          </Link>
+          <div className="flex items-center gap-2 flex-wrap">
+            {selectedDealIds.size >= 2 && (
+              <Link
+                href={`/dashboard/compare?ids=${Array.from(selectedDealIds).join(',')}`}
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium whitespace-nowrap text-center"
+              >
+                Compare ({selectedDealIds.size})
+              </Link>
+            )}
+            <Link
+              href="/deals/new"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap text-center"
+            >
+              Create Manual Deal
+            </Link>
+          </div>
         </div>
 
         {/* Filters and Sorting */}
@@ -483,10 +506,26 @@ function DashboardContent() {
                 className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
               >
                 <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                  <Link
-                    href={`/deals/${deal.id}`}
-                    className="flex-1"
-                  >
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <button
+                      type="button"
+                      onClick={toggleCompare(deal.id)}
+                      className="mt-1 flex-shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      title={selectedDealIds.has(deal.id) ? 'Remove from compare' : 'Add to compare'}
+                      aria-label={selectedDealIds.has(deal.id) ? 'Remove from compare' : 'Add to compare'}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedDealIds.has(deal.id)}
+                        onChange={() => {}}
+                        className="h-4 w-4 rounded"
+                        readOnly
+                      />
+                    </button>
+                    <Link
+                      href={`/deals/${deal.id}`}
+                      className="flex-1 min-w-0"
+                    >
                     <div className="flex items-start gap-3 mb-2 flex-wrap">
                       <h2 className="text-xl font-semibold text-gray-900">
                         {deal.address || 'Unknown address'}
@@ -590,6 +629,7 @@ function DashboardContent() {
                       </div>
                     )}
                   </Link>
+                  </div>
                   <div className="flex items-center gap-3 lg:flex-col lg:items-end">
                     <div className="text-sm text-gray-500 mb-2">
                       Updated {formatDate(deal.updatedAt)}
