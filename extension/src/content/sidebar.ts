@@ -1557,6 +1557,16 @@ export async function openSidebar(): Promise<void> {
   sidebarElement.innerHTML = createSidebarHTML()
   document.body.appendChild(sidebarElement)
   
+  // Sign out via delegation (so it works after innerHTML updates and is not lost on re-render)
+  sidebarElement.addEventListener('click', (e: MouseEvent) => {
+    const el = e.target as HTMLElement
+    if (el.id === 'dm-sign-out-sidebar' || el.closest('#dm-sign-out-sidebar')) {
+      e.preventDefault()
+      e.stopPropagation()
+      handleSignOut()
+    }
+  })
+  
   // Attach event listeners
   attachEventListeners()
 }
