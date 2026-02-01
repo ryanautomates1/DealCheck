@@ -6,7 +6,7 @@ const protectedRoutes = ['/dashboard', '/deals', '/pricing', '/debug']
 // Routes that should redirect to dashboard if already authenticated
 const authRoutes = ['/auth/login', '/auth/signup']
 // Routes that are always public
-const publicRoutes = ['/', '/share', '/api/webhooks', '/auth/callback']
+const publicRoutes = ['/', '/share', '/privacy', '/api/webhooks', '/auth/callback']
 
 export async function middleware(request: NextRequest) {
   // Skip middleware if not using Supabase

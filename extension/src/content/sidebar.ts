@@ -526,6 +526,8 @@ function createSidebarHTML(): string {
       `}
       <div class="dm-footer-links">
         <a href="https://getdealmetrics.com" target="_blank">Open DealMetrics</a>
+        <a href="https://getdealmetrics.com/privacy" target="_blank">Privacy</a>
+        ${isLoggedIn ? '<button type="button" class="dm-footer-signout" id="dm-sign-out-sidebar">Sign out</button>' : ''}
       </div>
     </div>
   `
@@ -1102,6 +1104,9 @@ function createSidebarStyles(): string {
     .dm-footer-links {
       display: flex;
       justify-content: center;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
       margin-top: 12px;
     }
     
@@ -1112,6 +1117,21 @@ function createSidebarStyles(): string {
     }
     
     .dm-footer-links a:hover {
+      color: #3b82f6;
+      text-decoration: underline;
+    }
+    
+    .dm-footer-signout {
+      background: none;
+      border: none;
+      font-size: 12px;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 0;
+      font-family: inherit;
+    }
+    
+    .dm-footer-signout:hover {
       color: #3b82f6;
       text-decoration: underline;
     }
@@ -1401,6 +1421,21 @@ function handleSignIn(): void {
   const cacheBuster = Date.now()
   const authUrl = `https://getdealmetrics.com/auth/extension?_=${cacheBuster}`
   window.open(authUrl, '_blank')
+}
+
+// Handle sign out (extension only: clear stored tokens and re-render)
+async function handleSignOut(): Promise<void> {
+  try {
+    await chrome.storage.sync.remove(['authToken', 'refreshToken', 'userEmail'])
+    isLoggedIn = false
+    authToken = null
+    updateSidebar()
+  } catch (e) {
+    console.error('[DealMetrics] Sign out error:', e)
+    isLoggedIn = false
+    authToken = null
+    updateSidebar()
+  }
 }
 
 // Attach event listeners

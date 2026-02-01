@@ -41,6 +41,9 @@ export function AppHeader() {
                 </Link>
               </div>
             )}
+            <Link href="/privacy" className="text-sm text-gray-500 hover:text-gray-700">
+              Privacy
+            </Link>
             {user && (
               <div className="flex items-center gap-3">
                 <span className="text-sm text-gray-600 hidden sm:inline">{user.email}</span>
