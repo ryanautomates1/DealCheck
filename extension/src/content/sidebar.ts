@@ -106,6 +106,46 @@ function createSidebarHTML(): string {
   const bathsDisplay = escapeHtml(String(scrapedData.baths ?? '--'))
   const sqftDisplay = escapeHtml(scrapedData.sqft ? scrapedData.sqft.toLocaleString() : '--')
   
+  // Advanced Analysis (Cap Rate, NOI, DSCR, Break-Even) only for investment / house hack — never for primary residence
+  const showAdvancedAnalysis = currentAssumptions.purchaseType !== 'primary_residence'
+  const advancedAnalysisHTML = showAdvancedAnalysis
+    ? `
+      <div class="dm-section dm-metrics dm-premium ${isLoggedIn ? '' : 'dm-locked'}">
+        <div class="dm-section-header">
+          <span>Advanced Analysis</span>
+          ${!isLoggedIn ? '<span class="dm-badge dm-badge-premium">PRO</span>' : ''}
+        </div>
+        ${isLoggedIn ? `
+        <div class="dm-metric-row">
+          <span class="dm-metric-label">Cap Rate</span>
+          <span class="dm-metric-value">${formatPercent(outputs.capRate)}</span>
+        </div>
+        <div class="dm-metric-row">
+          <span class="dm-metric-label">NOI (Annual)</span>
+          <span class="dm-metric-value">${formatCurrency(outputs.noiAnnual)}</span>
+        </div>
+        <div class="dm-metric-row">
+          <span class="dm-metric-label">DSCR</span>
+          <span class="dm-metric-value">${outputs.dscr.toFixed(2)}x</span>
+        </div>
+        <div class="dm-metric-row">
+          <span class="dm-metric-label">Break-Even Rent</span>
+          <span class="dm-metric-value">${formatCurrency(outputs.breakEvenRentMonthly)}</span>
+        </div>
+        ` : `
+        <div class="dm-lock-overlay">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <span>Cap Rate, NOI, DSCR, IRR...</span>
+          <button class="dm-btn dm-btn-primary dm-btn-small" id="dm-sign-in">Sign in to unlock</button>
+        </div>
+        `}
+      </div>
+      `
+    : ''
+
   // Monthly payment breakdown
   const loanAmount = inputs.purchasePrice * (1 - inputs.downPaymentPct / 100)
   const monthlyPI = loanAmount > 0 ? (loanAmount * (inputs.interestRate / 100 / 12) * Math.pow(1 + inputs.interestRate / 100 / 12, inputs.termYears * 12)) / (Math.pow(1 + inputs.interestRate / 100 / 12, inputs.termYears * 12) - 1) : 0
@@ -430,43 +470,7 @@ function createSidebarHTML(): string {
         ` : ''}
       </div>
       
-      ${!isPrimaryResidence ? `
-      <!-- Premium Metrics (LOCKED) - Investment only -->
-      <div class="dm-section dm-metrics dm-premium ${isLoggedIn ? '' : 'dm-locked'}">
-        <div class="dm-section-header">
-          <span>Advanced Analysis</span>
-          ${!isLoggedIn ? '<span class="dm-badge dm-badge-premium">PRO</span>' : ''}
-        </div>
-        
-        ${isLoggedIn ? `
-        <div class="dm-metric-row">
-          <span class="dm-metric-label">Cap Rate</span>
-          <span class="dm-metric-value">${formatPercent(outputs.capRate)}</span>
-        </div>
-        <div class="dm-metric-row">
-          <span class="dm-metric-label">NOI (Annual)</span>
-          <span class="dm-metric-value">${formatCurrency(outputs.noiAnnual)}</span>
-        </div>
-        <div class="dm-metric-row">
-          <span class="dm-metric-label">DSCR</span>
-          <span class="dm-metric-value">${outputs.dscr.toFixed(2)}x</span>
-        </div>
-        <div class="dm-metric-row">
-          <span class="dm-metric-label">Break-Even Rent</span>
-          <span class="dm-metric-value">${formatCurrency(outputs.breakEvenRentMonthly)}</span>
-        </div>
-        ` : `
-        <div class="dm-lock-overlay">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-          <span>Cap Rate, NOI, DSCR, IRR...</span>
-          <button class="dm-btn dm-btn-primary dm-btn-small" id="dm-sign-in">Sign in to unlock</button>
-        </div>
-        `}
-      </div>
-      ` : ''}
+      ${advancedAnalysisHTML}
     </div>
     
     <!-- Footer Actions -->
