@@ -612,7 +612,7 @@ function DashboardContent() {
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-medium text-indigo-500 uppercase">Total Profit</span>
+                              <span className="text-xs font-medium text-indigo-500 uppercase">{deal.purchaseType === 'primary_residence' ? 'Net Cash Outcome' : 'Total Profit'}</span>
                               <span className={`text-sm font-semibold ${
                                 deal.latestAnalysis.holdingPeriodOutputs.exitScenario.totalProfit > 0 ? 'text-green-600' : 'text-red-600'
                               }`}>

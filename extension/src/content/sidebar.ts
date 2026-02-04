@@ -423,7 +423,8 @@ function createSidebarHTML(): string {
           const totalEquityGrowth = principalPaydown + appreciation
           const appreciationPct = totalEquityGrowth > 0 ? (appreciation / totalEquityGrowth) * 100 : 50
           const principalPct = totalEquityGrowth > 0 ? (principalPaydown / totalEquityGrowth) * 100 : 50
-          return `
+          // Primary residence: no scorecards (IRR, EM, Profit, ROI); show ownership summary instead. Investment/house hack: full scorecards.
+          const scorecardsHTML = !isPrimaryResidence ? `
         <div class="dm-holding-cards">
           <div class="dm-holding-card dm-card-irr">
             <div class="dm-holding-card-label">IRR</div>
@@ -446,7 +447,17 @@ function createSidebarHTML(): string {
             <div class="dm-holding-card-hint">Profit / initial investment</div>
           </div>
         </div>
-        
+          ` : ''
+          const ownershipSummaryHTML = isPrimaryResidence && primaryOutputs ? `
+        <div class="dm-ownership-summary">
+          <div class="dm-ownership-summary-title">Ownership Summary</div>
+          <p class="dm-ownership-summary-text">
+            You&apos;ll need <span class="dm-summary-bold">${formatCurrency(primaryOutputs.cashRequiredAtClose)}</span> in cash to close. Your all-in monthly cost is <span class="dm-summary-bold">${formatCurrency(primaryOutputs.allInMonthlyCost)}/mo</span>. About <span class="dm-summary-bold">${formatCurrency(primaryOutputs.annualPrincipalPaydown / 12)}/mo</span> goes toward building equity, so your true cost of housing is about <span class="dm-summary-bold">${formatCurrency(primaryOutputs.annualNetCostOfOwnership / 12)}/mo</span>.${holdingPeriodOutputs ? ` If you sell at year ${currentAssumptions.holdingPeriodYears}, you&apos;d get approximately <span class="dm-summary-bold">${formatCurrency(esc.netProceedsFromSale)}</span> after paying off the mortgage and selling costs.` : ''}
+          </p>
+        </div>
+          ` : ''
+          return `
+        ${scorecardsHTML}
         <div class="dm-growth-graphic">
           <div class="dm-growth-title">Where your equity growth came from</div>
           <div class="dm-growth-bar">
@@ -458,9 +469,10 @@ function createSidebarHTML(): string {
             <span class="dm-growth-legend-item"><span class="dm-growth-dot dm-growth-principal"></span> Principal paydown ${formatCurrency(principalPaydown)}</span>
           </div>
         </div>
-        
+        ${ownershipSummaryHTML}
+        ${!isPrimaryResidence ? `
         <div class="dm-exit-scenario">
-          <div class="dm-exit-title">When you sell (Year ${currentAssumptions.holdingPeriodYears})</div>
+          <div class="dm-exit-title">Exit Scenario (Year ${currentAssumptions.holdingPeriodYears})</div>
           <p class="dm-exit-desc">Sale proceeds minus selling costs and remaining loan.</p>
           <div class="dm-exit-rows">
             <div class="dm-exit-row">
@@ -495,6 +507,7 @@ function createSidebarHTML(): string {
             </div>
           </div>
         </div>
+        ` : ''}
         
         `
         })() : ''}
@@ -774,6 +787,33 @@ function createSidebarStyles(): string {
       font-size: 10px;
       color: #94a3b8;
       margin-top: 2px;
+    }
+    
+    .dm-ownership-summary {
+      background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+      border: 1px solid #c7d2fe;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    
+    .dm-ownership-summary-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #3730a3;
+      margin-bottom: 6px;
+    }
+    
+    .dm-ownership-summary-text {
+      font-size: 12px;
+      color: #4338ca;
+      line-height: 1.5;
+      margin: 0;
+    }
+    
+    .dm-summary-bold {
+      font-weight: 600;
+      color: #1e1b4b;
     }
     
     .dm-growth-graphic {

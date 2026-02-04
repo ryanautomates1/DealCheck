@@ -1886,11 +1886,11 @@ export default function DealDetailPage() {
                   </div>
                   
                   <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
-                    <div className="text-sm font-medium text-purple-700 mb-1">Total Profit</div>
+                    <div className="text-sm font-medium text-purple-700 mb-1">{deal?.purchaseType === 'primary_residence' ? 'Net Cash Outcome' : 'Total Profit'}</div>
                     <div className={`text-2xl font-bold ${holdingPeriodAnalysis.exitScenario.totalProfit >= 0 ? 'text-purple-700' : 'text-red-600'}`}>
                       ${Math.abs(holdingPeriodAnalysis.exitScenario.totalProfit).toLocaleString()}
                     </div>
-                    <div className="text-xs text-purple-600 mt-1">Cash flow + sale proceeds - investment</div>
+                    <div className="text-xs text-purple-600 mt-1">{deal?.purchaseType === 'primary_residence' ? 'Sale + housing cost vs. investment' : 'Cash flow + sale proceeds - investment'}</div>
                   </div>
                   
                   <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-4 border border-amber-200">
@@ -1898,7 +1898,7 @@ export default function DealDetailPage() {
                     <div className={`text-2xl font-bold ${holdingPeriodAnalysis.exitScenario.totalROI >= 0 ? 'text-amber-700' : 'text-red-600'}`}>
                       {holdingPeriodAnalysis.exitScenario.totalROI.toFixed(1)}%
                     </div>
-                    <div className="text-xs text-amber-600 mt-1">Profit / initial investment</div>
+                    <div className="text-xs text-amber-600 mt-1">{deal?.purchaseType === 'primary_residence' ? 'Net outcome / initial investment' : 'Profit / initial investment'}</div>
                   </div>
                 </div>
               </>
@@ -2117,7 +2117,7 @@ export default function DealDetailPage() {
                     Starting with <span className="font-semibold">${holdingPeriodAnalysis.exitScenario.initialInvestment.toLocaleString()}</span> invested, 
                     you would receive <span className="font-semibold">${holdingPeriodAnalysis.exitScenario.cumulativeCashFlow.toLocaleString()}</span> in 
                     cumulative cash flow during the hold, plus <span className="font-semibold">${holdingPeriodAnalysis.exitScenario.netProceedsFromSale.toLocaleString()}</span> at 
-                    sale, for a total profit of{' '}
+                    sale, for a {deal?.purchaseType === 'primary_residence' ? 'net cash outcome' : 'total profit'} of{' '}
                     <span className={`font-semibold ${holdingPeriodAnalysis.exitScenario.totalProfit >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                       ${holdingPeriodAnalysis.exitScenario.totalProfit.toLocaleString()}
                     </span>.
