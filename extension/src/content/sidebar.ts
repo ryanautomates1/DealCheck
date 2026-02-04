@@ -334,6 +334,89 @@ function createSidebarHTML(): string {
         </div>
       </div>
       
+      ${isPrimaryResidence && primaryOutputs ? `
+      <!-- Primary residence headline (mimic dashboard) -->
+      <div class="dm-section dm-primary-headline">
+        <div class="dm-section-header">
+          <span>Primary Residence</span>
+        </div>
+        <div class="dm-primary-cards">
+          <div class="dm-primary-card dm-primary-card-blue">
+            <div class="dm-primary-card-label">All-In Monthly Cost</div>
+            <div class="dm-primary-card-value">${formatCurrency(primaryOutputs.allInMonthlyCost)}<span class="dm-primary-card-suffix">/mo</span></div>
+          </div>
+          <div class="dm-primary-card dm-primary-card-amber">
+            <div class="dm-primary-card-label">Cash to Close</div>
+            <div class="dm-primary-card-value">${formatCurrency(primaryOutputs.cashRequiredAtClose)}</div>
+          </div>
+          <div class="dm-primary-card dm-primary-card-purple">
+            <div class="dm-primary-card-label">True Monthly Cost</div>
+            <div class="dm-primary-card-value">${formatCurrency(primaryOutputs.annualNetCostOfOwnership / 12)}<span class="dm-primary-card-suffix">/mo</span></div>
+          </div>
+        </div>
+      </div>
+      ` : ''}
+      
+      ${!isPrimaryResidence ? (() => {
+        const isHouseHack = purchaseTypeRaw === 'house_hack'
+        const sectionTitle = isHouseHack ? 'House Hack' : 'Investment'
+        const cashFlowLabel = isHouseHack ? 'Net Housing Cost' : 'Cash Flow (Annual)'
+        const cashFlowValue = isHouseHack
+          ? (outputs.cashFlowAnnual >= 0
+            ? `FREE + ${formatCurrency(outputs.cashFlowAnnual)}/yr`
+            : `${formatCurrency(Math.abs(outputs.cashFlowMonthly))}/mo to live`)
+          : `${formatCurrency(outputs.cashFlowAnnual)} (${formatCurrency(outputs.cashFlowMonthly)}/mo)`
+        const cashFlowClass = isHouseHack ? 'dm-invest-card-purple' : (outputs.cashFlowAnnual >= 0 ? 'dm-invest-card-green' : 'dm-invest-card-red')
+        const summaryText = isHouseHack
+          ? `You'll need ${formatCurrency(outputs.allInCashRequired)} in cash to close. ${outputs.cashFlowAnnual >= 0 ? `With rental income you'll live for free and profit ${formatCurrency(outputs.cashFlowAnnual)}/yr (${formatCurrency(Math.round(outputs.cashFlowAnnual / 12))}/mo).` : `Your net housing cost is ${formatCurrency(Math.abs(outputs.cashFlowAnnual))}/yr (${formatCurrency(Math.abs(outputs.cashFlowMonthly))}/mo to live here).`} Cap rate: ${formatPercent(outputs.capRate)}. Cash-on-cash: ${formatPercent(outputs.cashOnCash)}.`
+          : `This deal requires ${formatCurrency(outputs.allInCashRequired)} in total cash. ${outputs.cashFlowAnnual >= 0 ? `Projected to return ${formatCurrency(outputs.cashFlowAnnual)} annually (${formatCurrency(outputs.cashFlowMonthly)}/mo), ${formatPercent(outputs.cashOnCash)} cash-on-cash.` : `Projected to lose ${formatCurrency(Math.abs(outputs.cashFlowAnnual))} annually (${formatCurrency(Math.abs(outputs.cashFlowMonthly))}/mo shortfall).`} Cap rate: ${formatPercent(outputs.capRate)}. DSCR: ${outputs.dscr.toFixed(2)}. Break-even rent: ${formatCurrency(outputs.breakEvenRentMonthly)}/mo.`
+        return `
+      <!-- ${sectionTitle} headline (mimic dashboard) -->
+      <div class="dm-section dm-invest-headline">
+        <div class="dm-section-header">
+          <span>${sectionTitle}</span>
+        </div>
+        <div class="dm-invest-cards">
+          <div class="dm-invest-card dm-invest-card-gray">
+            <div class="dm-invest-card-label">Total Monthly Payment</div>
+            <div class="dm-invest-card-value">${formatCurrency(outputs.totalMonthlyPayment)}</div>
+          </div>
+          <div class="dm-invest-card dm-invest-card-gray">
+            <div class="dm-invest-card-label">NOI (Annual)</div>
+            <div class="dm-invest-card-value">${formatCurrency(outputs.noiAnnual)}</div>
+          </div>
+          <div class="dm-invest-card ${cashFlowClass}">
+            <div class="dm-invest-card-label">${cashFlowLabel}</div>
+            <div class="dm-invest-card-value">${cashFlowValue}</div>
+          </div>
+          <div class="dm-invest-card dm-invest-card-green">
+            <div class="dm-invest-card-label">Cap Rate</div>
+            <div class="dm-invest-card-value">${formatPercent(outputs.capRate)}</div>
+          </div>
+          <div class="dm-invest-card dm-invest-card-green">
+            <div class="dm-invest-card-label">Cash-on-Cash</div>
+            <div class="dm-invest-card-value">${formatPercent(outputs.cashOnCash)}</div>
+          </div>
+          <div class="dm-invest-card dm-invest-card-gray">
+            <div class="dm-invest-card-label">DSCR</div>
+            <div class="dm-invest-card-value">${outputs.dscr.toFixed(2)}x</div>
+          </div>
+          <div class="dm-invest-card dm-invest-card-gray">
+            <div class="dm-invest-card-label">Break-Even Rent</div>
+            <div class="dm-invest-card-value">${formatCurrency(outputs.breakEvenRentMonthly)}</div>
+          </div>
+          <div class="dm-invest-card dm-invest-card-amber">
+            <div class="dm-invest-card-label">All-In Cash</div>
+            <div class="dm-invest-card-value">${formatCurrency(outputs.allInCashRequired)}</div>
+          </div>
+        </div>
+        <div class="dm-invest-summary">
+          <p class="dm-invest-summary-text">${summaryText}</p>
+        </div>
+      </div>
+      `
+      })() : ''}
+      
       <!-- Key Metrics (FREE) -->
       <div class="dm-section dm-metrics">
         <div class="dm-section-header">
@@ -423,7 +506,8 @@ function createSidebarHTML(): string {
           const totalEquityGrowth = principalPaydown + appreciation
           const appreciationPct = totalEquityGrowth > 0 ? (appreciation / totalEquityGrowth) * 100 : 50
           const principalPct = totalEquityGrowth > 0 ? (principalPaydown / totalEquityGrowth) * 100 : 50
-          // Primary residence: no scorecards (IRR, EM, Profit, ROI); show ownership summary instead. Investment/house hack: full scorecards.
+          // Primary residence: never render the four scorecards (IRR, EM, Total Profit, Total ROI) or the Exit Scenario table; show ownership summary and equity/effective-cost cards only.
+          // Investment/house hack: show full scorecards and Exit Scenario.
           const scorecardsHTML = !isPrimaryResidence ? `
         <div class="dm-holding-cards">
           <div class="dm-holding-card dm-card-irr">
@@ -456,8 +540,18 @@ function createSidebarHTML(): string {
           </p>
         </div>
           ` : ''
+          const primaryEquityCardHTML = isPrimaryResidence && holdingPeriodOutputs ? `
+        <div class="dm-primary-equity-card">
+          <div class="dm-primary-equity-card-label">Total Equity Built</div>
+          <div class="dm-primary-equity-card-value">${formatCurrency(totalEquityGrowth)}</div>
+          <div class="dm-primary-equity-card-breakdown">
+            Principal paydown: ${formatCurrency(principalPaydown)} · Appreciation: ${formatCurrency(appreciation)}
+          </div>
+        </div>
+          ` : ''
           return `
         ${scorecardsHTML}
+        ${primaryEquityCardHTML}
         <div class="dm-growth-graphic">
           <div class="dm-growth-title">Where your equity growth came from</div>
           <div class="dm-growth-bar">
@@ -622,6 +716,146 @@ function createSidebarStyles(): string {
       margin-bottom: 12px;
       font-weight: 600;
       color: #374151;
+    }
+    
+    .dm-primary-headline {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .dm-primary-cards {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    
+    .dm-primary-card {
+      border-radius: 8px;
+      padding: 10px 12px;
+      border: 1px solid transparent;
+    }
+    
+    .dm-primary-card-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin-bottom: 2px;
+    }
+    
+    .dm-primary-card-value {
+      font-size: 15px;
+      font-weight: 700;
+    }
+    
+    .dm-primary-card-suffix {
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .dm-primary-card-blue {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      border-color: #93c5fd;
+      color: #1e40af;
+    }
+    
+    .dm-primary-card-blue .dm-primary-card-label { color: #1d4ed8; }
+    .dm-primary-card-blue .dm-primary-card-value { color: #1e3a8a; }
+    
+    .dm-primary-card-amber {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-color: #fcd34d;
+      color: #92400e;
+    }
+    
+    .dm-primary-card-amber .dm-primary-card-label { color: #b45309; }
+    .dm-primary-card-amber .dm-primary-card-value { color: #78350f; }
+    
+    .dm-primary-card-purple {
+      background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+      border-color: #c4b5fd;
+      color: #5b21b6;
+    }
+    
+    .dm-primary-card-purple .dm-primary-card-label { color: #6d28d9; }
+    .dm-primary-card-purple .dm-primary-card-value { color: #4c1d95; }
+    
+    .dm-invest-headline {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .dm-invest-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    
+    .dm-invest-card {
+      border-radius: 8px;
+      padding: 8px 10px;
+      border: 1px solid transparent;
+    }
+    
+    .dm-invest-card-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin-bottom: 2px;
+    }
+    
+    .dm-invest-card-value {
+      font-size: 13px;
+      font-weight: 700;
+    }
+    
+    .dm-invest-card-gray {
+      background: #f1f5f9;
+      border-color: #e2e8f0;
+    }
+    .dm-invest-card-gray .dm-invest-card-label { color: #475569; }
+    .dm-invest-card-gray .dm-invest-card-value { color: #1e293b; }
+    
+    .dm-invest-card-green {
+      background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+      border-color: #86efac;
+    }
+    .dm-invest-card-green .dm-invest-card-label { color: #15803d; }
+    .dm-invest-card-green .dm-invest-card-value { color: #166534; }
+    
+    .dm-invest-card-red {
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      border-color: #fca5a5;
+    }
+    .dm-invest-card-red .dm-invest-card-label { color: #b91c1c; }
+    .dm-invest-card-red .dm-invest-card-value { color: #991b1b; }
+    
+    .dm-invest-card-purple {
+      background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+      border-color: #c4b5fd;
+    }
+    .dm-invest-card-purple .dm-invest-card-label { color: #6d28d9; }
+    .dm-invest-card-purple .dm-invest-card-value { color: #5b21b6; }
+    
+    .dm-invest-card-amber {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-color: #fcd34d;
+    }
+    .dm-invest-card-amber .dm-invest-card-label { color: #b45309; }
+    .dm-invest-card-amber .dm-invest-card-value { color: #78350f; }
+    
+    .dm-invest-summary {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    .dm-invest-summary-text {
+      font-size: 11px;
+      color: #475569;
+      line-height: 1.45;
+      margin: 0;
     }
     
     .dm-property-summary {
@@ -814,6 +1048,35 @@ function createSidebarStyles(): string {
     .dm-summary-bold {
       font-weight: 600;
       color: #1e1b4b;
+    }
+    
+    .dm-primary-equity-card {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      border: 1px solid #93c5fd;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+    
+    .dm-primary-equity-card-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #1d4ed8;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin-bottom: 2px;
+    }
+    
+    .dm-primary-equity-card-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e3a8a;
+    }
+    
+    .dm-primary-equity-card-breakdown {
+      font-size: 10px;
+      color: #1e40af;
+      margin-top: 4px;
     }
     
     .dm-growth-graphic {
