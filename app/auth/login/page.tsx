@@ -1,14 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient, checkSupabaseReachable, signInWithPasswordDirect } from '@/lib/supabase/client'
 
 const SUPABASE_CHECKLIST = 'Supabase Dashboard: Project Settings → General (Resume if paused). Auth → Providers → Email enabled. Auth → URL Configuration → Site URL set to your app URL (e.g. https://getdealmetrics.com).'
 
 export default function LoginPage() {
-  const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -45,8 +45,10 @@ export default function LoginPage() {
         setLoading(false)
         return
       }
-      router.push('/dashboard')
-      router.refresh()
+      // Full page redirect so the next request sends cookies and middleware sees the session
+      const next = searchParams.get('next')
+      const path = next && next.startsWith('/') ? next : '/dashboard'
+      window.location.href = path
     } catch (err: any) {
       console.error('[Login] Caught error:', err)
       setError(err.message || 'An error occurred')
