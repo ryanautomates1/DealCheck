@@ -22,6 +22,12 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = authRoutes.some(route => pathname.startsWith(route))
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
 
+  // Root: signed-in → dashboard, otherwise → login (auth/login is the main landing)
+  if (pathname === '/' || pathname === '') {
+    if (user) return NextResponse.redirect(new URL('/dashboard', request.url))
+    return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
   // Redirect unauthenticated users from protected routes to login
   if (isProtectedRoute && !user) {
     const loginUrl = new URL('/auth/login', request.url)

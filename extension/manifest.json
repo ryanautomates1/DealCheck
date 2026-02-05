@@ -9,9 +9,10 @@
   ],
   "host_permissions": [
     "https://www.zillow.com/*",
+    "https://zillow.com/*",
     "http://localhost:3000/*",
     "https://getdealmetrics.com/*",
-    "https://*/*"
+    "https://zgysztqjsocznebtojbr.supabase.co/*"
   ],
   "action": {
     "default_title": "DealMetrics - Click to open Dashboard"

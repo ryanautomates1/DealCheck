@@ -7,8 +7,8 @@ export default function Home() {
   const router = useRouter()
   
   useEffect(() => {
-    // Always redirect to dashboard - middleware will handle auth if Supabase is enabled
-    router.push('/dashboard')
+    // Fallback when Supabase is disabled: auth/login is the main landing
+    router.push('/auth/login')
   }, [router])
   
   return (
