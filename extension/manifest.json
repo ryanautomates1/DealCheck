@@ -3,10 +3,11 @@
   "name": "DealMetrics",
   "version": "1.0.0",
   "description": "Import real estate listings to DealMetrics for deal analysis",
-  "permissions": [
-    "activeTab",
-    "storage"
-  ],
+  "icons": {
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["activeTab", "storage"],
   "host_permissions": [
     "https://www.zillow.com/*",
     "https://zillow.com/*",
@@ -14,33 +15,11 @@
     "https://getdealmetrics.com/*",
     "https://zgysztqjsocznebtojbr.supabase.co/*"
   ],
-  "action": {
-    "default_title": "DealMetrics - Click to open Dashboard"
-  },
+  "action": { "default_title": "DealMetrics - Click to open Dashboard" },
   "content_scripts": [
-    {
-      "matches": ["https://www.zillow.com/*"],
-      "js": ["content.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": [
-        "http://localhost:3000/auth/extension/success*",
-        "https://getdealmetrics.com/auth/extension/success*"
-      ],
-      "js": ["auth.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": [
-        "http://localhost:3000/*",
-        "https://getdealmetrics.com/*"
-      ],
-      "js": ["website-auth.js"],
-      "run_at": "document_idle"
-    }
+    { "matches": ["https://www.zillow.com/*"], "js": ["content.js"], "run_at": "document_idle" },
+    { "matches": ["http://localhost:3000/auth/extension/success*", "https://getdealmetrics.com/auth/extension/success*"], "js": ["auth.js"], "run_at": "document_idle" },
+    { "matches": ["http://localhost:3000/*", "https://getdealmetrics.com/*"], "js": ["website-auth.js"], "run_at": "document_idle" }
   ],
-  "background": {
-    "service_worker": "background.js"
-  }
+  "background": { "service_worker": "background.js" }
 }

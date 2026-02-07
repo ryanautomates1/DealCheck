@@ -19,9 +19,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'saveDeal') {
     handleSaveDeal(request.payload, request.authToken)
       .then(result => {
+        const data = result != null && typeof result === 'object' ? (result as Record<string, unknown>) : {}
+        if (data.success === false && typeof data.error === 'string') {
+          sendResponse({
+            success: false,
+            error: data.error,
+            upgradeUrl: typeof data.upgradeUrl === 'string' ? data.upgradeUrl : undefined,
+          })
+          return
+        }
         let dealId: string | null = null
         try {
-          const data = result != null && typeof result === 'object' ? (result as Record<string, unknown>) : {}
           const raw = data?.dealId
           dealId = typeof raw === 'string' ? raw : null
         } catch {
@@ -29,8 +37,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
         let importsRemaining: number | undefined
         try {
-          const r = result != null && typeof result === 'object' ? (result as Record<string, unknown>) : {}
-          importsRemaining = typeof r?.importsRemaining === 'number' ? r.importsRemaining : undefined
+          importsRemaining = typeof data?.importsRemaining === 'number' ? data.importsRemaining : undefined
         } catch {
           importsRemaining = undefined
         }
@@ -124,13 +131,16 @@ async function handleSaveDeal(payload: any, authTokenFromContent: string): Promi
     const data = await response.json().catch(() => ({}))
     throw new Error(data.error || 'Invalid or expired token')
   }
-  console.log('[DealMetrics BG] API response status:', response.status)
+  if (response.status === 403) {
+    const data = await response.json().catch(() => ({}))
+    const message = data.message || data.error || 'Import limit reached'
+    const upgradeUrl = typeof data.upgradeUrl === 'string' ? data.upgradeUrl : undefined
+    return { success: false, error: message, upgradeUrl }
+  }
   if (!response.ok) {
     const data = await response.json().catch(() => ({}))
-    console.error('[DealMetrics BG] API error:', data)
     throw new Error(data.error || `HTTP ${response.status}`)
   }
   const result = await response.json()
-  console.log('[DealMetrics BG] API success:', result)
   return result
 }

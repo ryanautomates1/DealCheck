@@ -1617,7 +1617,9 @@ async function handleSaveDeal(): Promise<void> {
     }
     
     if (!response.success) {
-      throw new Error(response.error || 'Failed to save deal')
+      const err = new Error(response.error || 'Failed to save deal') as Error & { upgradeUrl?: string }
+      err.upgradeUrl = response.upgradeUrl
+      throw err
     }
 
     // Extract dealId safely (never throw; if anything fails we still show success)
@@ -1670,6 +1672,7 @@ async function handleSaveDeal(): Promise<void> {
     const isTokenError = errorMessage.toLowerCase().includes('token') || 
                          errorMessage.toLowerCase().includes('unauthorized') ||
                          errorMessage.toLowerCase().includes('401')
+    const upgradeUrl = (error as Error & { upgradeUrl?: string }).upgradeUrl
     
     // If token is expired/invalid, clear it and prompt re-login
     if (isTokenError) {
@@ -1687,6 +1690,9 @@ async function handleSaveDeal(): Promise<void> {
         errorMsg.innerHTML = `
           Session expired. <button id="dm-reauth-btn" style="color: #2563eb; text-decoration: underline; background: none; border: none; cursor: pointer;">Sign in again</button>
         `
+      } else if (upgradeUrl) {
+        const pricingHref = upgradeUrl.startsWith('http') ? upgradeUrl : `https://getdealmetrics.com${upgradeUrl}`
+        errorMsg.innerHTML = `${escapeHtml(errorMessage)} <a href="${escapeHtml(pricingHref)}" target="_blank" rel="noopener" style="color: #2563eb; font-weight: 600;">Upgrade to Pro</a>`
       } else {
         errorMsg.textContent = errorMessage
       }

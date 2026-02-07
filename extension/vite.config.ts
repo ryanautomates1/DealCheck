@@ -1,10 +1,14 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
-import { copyFileSync, existsSync, renameSync, readFileSync, writeFileSync } from 'fs'
+import { copyFileSync, existsSync, mkdirSync, renameSync, readFileSync, readdirSync, writeFileSync } from 'fs'
 
 export default defineConfig({
   build: {
     outDir: 'dist',
+    minify: 'esbuild',
+    esbuild: {
+      drop: ['console', 'debugger'],
+    },
     rollupOptions: {
       input: {
         popup: resolve(__dirname, 'src/popup/popup.html'),
@@ -40,6 +44,19 @@ export default defineConfig({
         if (existsSync(manifestPath)) {
           copyFileSync(manifestPath, distPath)
           console.log('✓ Copied manifest.json to dist/')
+        }
+        
+        // Copy icons to dist so the packed extension has them
+        const iconsSrc = resolve(__dirname, 'icons')
+        const iconsDest = resolve(__dirname, 'dist', 'icons')
+        if (existsSync(iconsSrc)) {
+          mkdirSync(iconsDest, { recursive: true })
+          for (const name of readdirSync(iconsSrc)) {
+            if (name.endsWith('.png')) {
+              copyFileSync(resolve(iconsSrc, name), resolve(iconsDest, name))
+            }
+          }
+          console.log('✓ Copied icons to dist/')
         }
         
         // Move popup.html to root if it's in a subdirectory

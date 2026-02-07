@@ -61,8 +61,9 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json()
     
-    // Log the incoming payload for debugging
-    console.log('Received import payload:', JSON.stringify(body, null, 2))
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Received import payload:', JSON.stringify(body, null, 2))
+    }
     
     const validated = extensionImportSchema.parse(body)
     

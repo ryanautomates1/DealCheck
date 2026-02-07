@@ -348,7 +348,7 @@ function DashboardContent() {
                 </div>
               </div>
               <a
-                href="https://chrome.google.com/webstore/detail/dealmetrics/YOUR_EXTENSION_ID"
+                href="https://chromewebstore.google.com/detail/dealmetrics/pmombpobhmjpjddbjgjmoelikkglcnee"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-5 py-2.5 bg-white text-blue-700 rounded-lg font-medium hover:bg-blue-50 transition-colors whitespace-nowrap"
