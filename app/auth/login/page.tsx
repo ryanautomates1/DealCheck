@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient, checkSupabaseReachable, signInWithPasswordDirect } from '@/lib/supabase/client'
 
 const SUPABASE_CHECKLIST = 'Supabase Dashboard: Project Settings → General (Resume if paused). Auth → Providers → Email enabled. Auth → URL Configuration → Site URL set to your app URL (e.g. https://getdealmetrics.com).'
 
-export default function LoginPage() {
+function LoginForm() {
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -143,5 +143,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+        <p className="text-blue-200">Loading...</p>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

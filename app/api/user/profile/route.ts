@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserIdFromToken } from '@/lib/auth'
 import { createServerClient } from '@supabase/ssr'
+
+export const dynamic = 'force-dynamic'
 
 // GET /api/user/profile - Get user profile for extension
 export async function GET(request: NextRequest) {
