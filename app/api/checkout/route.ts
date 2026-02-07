@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUserId, getUserProfile } from '@/lib/auth'
-import { stripe, STRIPE_PRO_PRICE_ID } from '@/lib/stripe'
+import { getStripe, STRIPE_PRO_PRICE_ID } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
 
 // POST /api/checkout - Create Stripe checkout session
 export async function POST(request: NextRequest) {
   try {
+    // Check Stripe configuration before requiring auth
+    if (!process.env.STRIPE_SECRET_KEY?.trim()) {
+      return NextResponse.json(
+        { error: 'Stripe is not configured. Please add STRIPE_SECRET_KEY to your environment.' },
+        { status: 503 }
+      )
+    }
+    if (!STRIPE_PRO_PRICE_ID?.trim()) {
+      return NextResponse.json(
+        { error: 'Stripe is not configured. Please add STRIPE_PRO_PRICE_ID to your environment.' },
+        { status: 503 }
+      )
+    }
+
     // Must be authenticated
     const userId = await getCurrentUserId()
     const profile = await getUserProfile()
@@ -23,6 +37,7 @@ export async function POST(request: NextRequest) {
     }
     
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const stripe = getStripe()
     
     // Create or get Stripe customer
     let customerId = profile.stripeCustomerId
@@ -72,9 +87,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     console.error('Error creating checkout session:', error)
-    return NextResponse.json(
-      { error: process.env.NODE_ENV === 'production' ? 'Something went wrong' : 'Failed to create checkout session' },
-      { status: 500 }
-    )
+    // Surface Stripe-related errors so you can fix config (e.g. invalid key or price ID)
+    const isStripeError = error?.type?.startsWith('Stripe') || error?.code != null
+    const message = isStripeError && error?.message
+      ? `Stripe error: ${error.message}`
+      : process.env.NODE_ENV === 'production'
+        ? 'Something went wrong. Please check that Stripe is configured (STRIPE_SECRET_KEY, STRIPE_PRO_PRICE_ID).'
+        : error?.message || 'Failed to create checkout session'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

@@ -120,6 +120,7 @@ function createSidebarHTML(): string {
           </svg>
           Sign in
         </button>
+        <p class="dm-signin-gate-signup">Don&apos;t have an account? <a href="https://getdealmetrics.com/auth/signup" target="_blank" rel="noopener" class="dm-signin-gate-link">Sign up</a></p>
       </div>
     </div>
     <div class="dm-sidebar-footer">
@@ -762,6 +763,19 @@ function createSidebarStyles(): string {
       color: #6b7280;
       margin: 0 0 20px 0;
       max-width: 280px;
+    }
+    .dm-signin-gate-signup {
+      font-size: 13px;
+      color: #6b7280;
+      margin: 16px 0 0 0;
+    }
+    .dm-signin-gate-link {
+      color: #2563eb;
+      font-weight: 500;
+      text-decoration: none;
+    }
+    .dm-signin-gate-link:hover {
+      text-decoration: underline;
     }
     
     .dm-section {

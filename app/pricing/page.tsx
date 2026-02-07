@@ -95,15 +95,13 @@ function PricingContent() {
                 <svg className="w-5 h-5 text-green-400 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-white/80">Unlimited manual deal entries</span>
+                <span className="text-white/80">Sign in to use the extension on listing sites</span>
               </li>
               <li className="flex items-start">
                 <svg className="w-5 h-5 text-green-400 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-white/80">
-                  <strong>2 extension imports</strong> per month
-                </span>
+                <span className="text-white/80">Unlimited manual deal entries</span>
               </li>
               <li className="flex items-start">
                 <svg className="w-5 h-5 text-green-400 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,6 +120,12 @@ function PricingContent() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 <span className="text-white/80">Shareable deal reports</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="w-5 h-5 text-amber-400 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span className="text-white/80">Saving deals from extension and Compare require Pro</span>
               </li>
             </ul>
 
@@ -169,7 +173,15 @@ function PricingContent() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 <span className="text-white/90">
-                  <strong>Unlimited extension imports</strong>
+                  <strong>Save deals from the extension</strong> (unlimited)
+                </span>
+              </li>
+              <li className="flex items-start">
+                <svg className="w-5 h-5 text-green-300 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-white/90">
+                  <strong>Compare</strong> up to 5 deals side-by-side
                 </span>
               </li>
               <li className="flex items-start">
@@ -213,22 +225,23 @@ function PricingContent() {
           <div className="space-y-6">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
               <h3 className="text-lg font-semibold text-white mb-2">
-                What counts as an &quot;extension import&quot;?
+                What can I do with the Free plan?
               </h3>
               <p className="text-white/70">
-                Each time you use the Chrome extension to import a listing from real estate sites, 
-                it counts as one import. Manual deal entries (where you type in the data yourself) 
-                are always unlimited and free.
+                Sign in to use the extension on Zillow and other supported sites to analyze listings. 
+                You can create unlimited deals manually on the website. Saving a listing from the 
+                extension to your dashboard and using Compare require Pro.
               </p>
             </div>
 
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
               <h3 className="text-lg font-semibold text-white mb-2">
-                When does my import limit reset?
+                What does Pro include?
               </h3>
               <p className="text-white/70">
-                Your import limit resets on the first day of each calendar month. 
-                Unused imports don&apos;t roll over.
+                Pro lets you save deals from the extension to your dashboard with no limit, and 
+                compare up to 5 deals side-by-side. You get everything in Free plus these features 
+                for $9.99/month.
               </p>
             </div>
 
