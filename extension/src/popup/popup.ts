@@ -99,7 +99,7 @@ async function importListing() {
 
   // Check for auth token
   if (!currentAuth.authToken) {
-    errorEl.textContent = 'Please sign in first to import listings.'
+    errorEl.textContent = 'Sign in to use DealMetrics.'
     return
   }
 
@@ -194,7 +194,7 @@ async function importListing() {
           // Check for import limit error
           if (apiResponse.status === 403 && errorData.upgradeUrl) {
             isLimitError = true
-            errorMessage = errorData.message || 'Monthly import limit reached. Upgrade to Pro for unlimited imports.'
+            errorMessage = errorData.message || 'Upgrade to Pro to save deals to your dashboard.'
           }
 
           // Check for unauthorized or invalid token

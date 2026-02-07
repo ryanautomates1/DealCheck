@@ -266,40 +266,6 @@ export async function checkAndIncrementImportCount(userId?: string): Promise<{ a
     return { allowed: true, remaining: 999 }
   }
 
-  // Check if we need to reset the counter (new month)
-  const resetDate = new Date(profile.imports_reset_at)
-  const now = new Date()
-  const needsReset = now.getMonth() !== resetDate.getMonth() || now.getFullYear() !== resetDate.getFullYear()
-
-  if (needsReset) {
-    // Reset counter for new month
-    await supabase
-      .from('profiles')
-      .update({
-        imports_this_month: 1,
-        imports_reset_at: now.toISOString(),
-        updated_at: now.toISOString(),
-      })
-      .eq('id', targetUserId)
-
-    return { allowed: true, remaining: 1 } // 1 remaining after this import
-  }
-
-  // Check if limit reached (2 imports per month for free tier)
-  const FREE_TIER_LIMIT = 2
-  if (profile.imports_this_month >= FREE_TIER_LIMIT) {
-    return { allowed: false, remaining: 0 }
-  }
-
-  // Increment counter
-  const newCount = profile.imports_this_month + 1
-  await supabase
-    .from('profiles')
-    .update({
-      imports_this_month: newCount,
-      updated_at: now.toISOString(),
-    })
-    .eq('id', targetUserId)
-
-  return { allowed: true, remaining: FREE_TIER_LIMIT - newCount }
+  // Free tier: zero extension imports (Upgrade to Save)
+  return { allowed: false, remaining: 0 }
 }

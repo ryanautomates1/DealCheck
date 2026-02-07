@@ -305,18 +305,17 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* Free tier import limit warning */}
-        {profile && profile.subscription_tier === 'free' && (profile.imports_this_month || 0) >= 2 && (
+        {/* Free tier upgrade banner */}
+        {profile && profile.subscription_tier === 'free' && (
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <div className="flex items-start gap-3">
               <svg className="w-6 h-6 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
               <div className="flex-1">
-                <p className="font-medium text-amber-800">Extension import limit reached</p>
-                <p className="text-sm text-amber-600">
-                  You&apos;ve used all 2 of your monthly extension imports. 
-                  You can still create deals manually, or upgrade to Pro for unlimited imports.
+                <p className="font-medium text-amber-800">Upgrade to Pro to save deals from the extension and compare listings</p>
+                <p className="text-sm text-amber-600 mt-1">
+                  Get unlimited extension imports and side-by-side deal comparison.
                 </p>
               </div>
               <Link
@@ -342,8 +341,8 @@ function DashboardContent() {
                 <div>
                   <h3 className="text-lg font-semibold">Get the DealMetrics Chrome Extension</h3>
                   <p className="text-blue-100 text-sm mt-1">
-                    Import listings directly from real estate sites with one click. 
-                    {profile?.subscription_tier === 'free' ? ' Free users get 2 imports/month.' : ' Unlimited imports with Pro!'}
+                    Sign in to use the extension. Upgrade to Pro to save deals to your dashboard.
+                    {profile?.subscription_tier === 'pro' ? ' Unlimited imports with Pro!' : ''}
                   </p>
                 </div>
               </div>
@@ -378,12 +377,20 @@ function DashboardContent() {
             />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {selectedDealIds.size >= 2 && (
+            {selectedDealIds.size >= 2 && profile && profile.subscription_tier === 'pro' && (
               <Link
                 href={`/dashboard/compare?ids=${Array.from(selectedDealIds).join(',')}`}
                 className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium whitespace-nowrap text-center"
               >
                 Compare ({selectedDealIds.size})
+              </Link>
+            )}
+            {selectedDealIds.size >= 2 && profile && profile.subscription_tier !== 'pro' && (
+              <Link
+                href="/pricing"
+                className="px-6 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors font-medium whitespace-nowrap text-center"
+              >
+                Upgrade to compare
               </Link>
             )}
             <Link

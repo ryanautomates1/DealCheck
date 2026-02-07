@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Deal, Analysis } from '@/lib/types'
 import { AppHeader } from '@/components/AppHeader'
+import { useAuth } from '@/components/AuthProvider'
 
 const MAX_COMPARE = 5
 const MIN_COMPARE = 2
@@ -27,9 +28,46 @@ function formatCurrency(value: number | null | undefined): string {
 function CompareContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { profile, loading: authLoading } = useAuth()
   const [dealsWithAnalyses, setDealsWithAnalyses] = useState<DealWithAnalysis[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Pro required to compare
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <AppHeader />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+  if (profile?.subscription_tier !== 'pro') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <AppHeader />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="max-w-md mx-auto text-center py-12 px-6 bg-white rounded-xl border border-gray-200 shadow-sm">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Upgrade to Pro to compare deals</h2>
+            <p className="text-gray-600 mb-6">Side-by-side comparison is a Pro feature. Upgrade to compare your listings.</p>
+            <Link
+              href="/pricing"
+              className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            >
+              View pricing
+            </Link>
+            <div className="mt-4">
+              <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700">
+                Back to Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   useEffect(() => {
     const idsParam = searchParams.get('ids')

@@ -90,6 +90,47 @@ function buildHoldingPeriodInputs(): { underwritingInputs: UnderwritingInputs; h
 
 // Create sidebar HTML
 function createSidebarHTML(): string {
+  // Sign-in gate: require sign-in to use extension on the web
+  if (!isLoggedIn) {
+    return `
+    <div class="dm-sidebar-header">
+      <div class="dm-sidebar-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span>DealMetrics</span>
+      </div>
+      <button class="dm-close-btn" id="dm-close-sidebar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="dm-sidebar-content">
+      <div class="dm-signin-gate">
+        <p class="dm-signin-gate-title">Sign in to use DealMetrics</p>
+        <p class="dm-signin-gate-desc">Sign in with your account to analyze listings and save deals.</p>
+        <button class="dm-btn dm-btn-primary dm-btn-full" id="dm-sign-in-gate">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+          Sign in
+        </button>
+      </div>
+    </div>
+    <div class="dm-sidebar-footer">
+      <div class="dm-footer-links">
+        <a href="https://getdealmetrics.com" target="_blank">Open DealMetrics</a>
+        <a href="https://getdealmetrics.com/privacy" target="_blank">Privacy</a>
+      </div>
+    </div>
+    `
+  }
+
   const inputs = buildInputs()
   const outputs = calculateUnderwriting(inputs)
   // Normalize purchase type so we reliably hide investment-only sections for primary residence
@@ -699,6 +740,28 @@ function createSidebarStyles(): string {
       flex: 1;
       overflow-y: auto;
       padding: 16px;
+    }
+    
+    .dm-signin-gate {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      text-align: center;
+      padding: 24px 16px;
+    }
+    .dm-signin-gate-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 8px 0;
+    }
+    .dm-signin-gate-desc {
+      font-size: 14px;
+      color: #6b7280;
+      margin: 0 0 20px 0;
+      max-width: 280px;
     }
     
     .dm-section {
@@ -1692,7 +1755,7 @@ async function handleSaveDeal(): Promise<void> {
         `
       } else if (upgradeUrl) {
         const pricingHref = upgradeUrl.startsWith('http') ? upgradeUrl : `https://getdealmetrics.com${upgradeUrl}`
-        errorMsg.innerHTML = `${escapeHtml(errorMessage)} <a href="${escapeHtml(pricingHref)}" target="_blank" rel="noopener" style="color: #2563eb; font-weight: 600;">Upgrade to Pro</a>`
+        errorMsg.innerHTML = `${escapeHtml(errorMessage)} <a href="${escapeHtml(pricingHref)}" target="_blank" rel="noopener" style="color: #2563eb; font-weight: 600;">Upgrade to Save</a>`
       } else {
         errorMsg.textContent = errorMessage
       }
@@ -1787,7 +1850,8 @@ function attachEventListeners(): void {
   // Save button
   document.getElementById('dm-save-deal')?.addEventListener('click', handleSaveDeal)
   
-  // Sign in buttons
+  // Sign in buttons (gate, footer, advanced section)
+  document.getElementById('dm-sign-in-gate')?.addEventListener('click', handleSignIn)
   document.getElementById('dm-sign-in')?.addEventListener('click', handleSignIn)
   document.getElementById('dm-sign-in-footer')?.addEventListener('click', handleSignIn)
 }

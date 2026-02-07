@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'Import limit reached',
-          message: 'You have reached your monthly limit of 2 extension imports. Upgrade to Pro for unlimited imports.',
+          message: 'Upgrade to Pro to save deals to your dashboard.',
           upgradeUrl: '/pricing'
         },
         { status: 403 }

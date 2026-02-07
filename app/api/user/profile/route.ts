@@ -64,11 +64,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Calculate remaining imports
-    const FREE_TIER_LIMIT = 2
-    const importsRemaining = profile.subscription_tier === 'pro' 
-      ? 999 
-      : Math.max(0, FREE_TIER_LIMIT - profile.imports_this_month)
+    // Calculate remaining imports (free tier = 0, Pro = unlimited)
+    const importsRemaining = profile.subscription_tier === 'pro' ? 999 : 0
 
     return NextResponse.json({
       id: profile.id,
