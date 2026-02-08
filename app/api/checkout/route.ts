@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUserId, getUserProfile } from '@/lib/auth'
-import { getStripe, STRIPE_PRO_PRICE_ID } from '@/lib/stripe'
+import { STRIPE_SECRET_KEY, STRIPE_PRO_PRICE_ID } from '@/lib/config'
+import { getStripe, STRIPE_PRO_PRICE_ID as STRIPE_PRICE_ID } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
 
 // POST /api/checkout - Create Stripe checkout session
 export async function POST(request: NextRequest) {
   try {
-    // Check Stripe configuration before requiring auth
-    if (!process.env.STRIPE_SECRET_KEY?.trim()) {
+    // Check Stripe configuration (uses config so Amplify build-time secrets work at runtime)
+    if (!STRIPE_SECRET_KEY?.trim()) {
       return NextResponse.json(
-        { error: 'Stripe is not configured. Please add STRIPE_SECRET_KEY to your environment.' },
+        { error: 'Stripe is not configured. Please add STRIPE_SECRET_KEY to your environment (and redeploy).' },
         { status: 503 }
       )
     }
-    if (!STRIPE_PRO_PRICE_ID?.trim()) {
+    const priceId = STRIPE_PRICE_ID || STRIPE_PRO_PRICE_ID
+    if (!priceId?.trim()) {
       return NextResponse.json(
-        { error: 'Stripe is not configured. Please add STRIPE_PRO_PRICE_ID to your environment.' },
+        { error: 'Stripe is not configured. Please add STRIPE_PRO_PRICE_ID to your environment (and redeploy).' },
         { status: 503 }
       )
     }
